@@ -60,3 +60,13 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ Access Granted")
     
     # 2. Input Area
+    st.write("### Paste the Script Below:")
+    user_script = st.text_area("Script Input", height=300, placeholder="Paste the true crime script here...")
+    
+    if st.button("Activate Lisa"):
+        if user_script:
+            with st.spinner("Lisa is analyzing the script..."):
+                try:
+                    # Setup Gemini with Lucas's Key
+                    # This key is valid for the Free Tier
+                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6
