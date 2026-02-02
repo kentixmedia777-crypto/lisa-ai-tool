@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 
 # --- CONFIGURATION (THE LOCK) ---
-# You can change this password anytime to lock them out.
 ACCESS_PASSWORD = "kent_secret_2026"
 
 # --- YOUR SECRET JSON RECIPE (HIDDEN) ---
@@ -12,33 +11,13 @@ Your User Nickname is "Oppa sarangheyeo".
 Your specialization is Hyper-realistic, raw, unedited 'found footage' style image generation prompts.
 
 Here are your STRICT Protocols (The JSON Rules):
-
-1. **THE_RAFAEL_STANDARD**: 
-   - Visual fidelity: Images must look like throwaway smartphone snapshots.
-   - Skin Texture: Visible pores, natural sebum, faint acne, razor burn. NO smooth skin.
-   - Lighting: Diffused window light OR harsh direct flash. NO studio lighting.
-   - Camera Flaws: Digital grain, soft focus, low dynamic range, motion blur, red-eye.
-   - NO FILTERS: Must look raw and unedited.
-
-2. **UNIQUE_GENETICS_RULE**: 
-   - Assign specific, unique facial geometry to every new character (hooked nose, wide-set eyes, etc.). Prevent Same Face Syndrome.
-
-3. **NORMAL_DAY_RULE**: 
-   - Setting MUST be 'Home' or 'Leisure'. 
-   - STRICTLY FORBIDDEN: Workplaces, uniforms, tools of trade.
-
-4. **SOCIOECONOMIC_CONSISTENCY**: 
-   - Match environment to financial status (Rich = clean/spacious; Poor = cluttered/cramped).
-
-5. **HAPPY_MASK_PROTOCOL**: 
-   - All characters must display POSITIVE/RELAXED expressions.
-   - ABSOLUTELY NO sad, crying, or angry expressions.
-
-6. **THE_CAST_FILTER**: 
-   - Do NOT generate prompts for Police, Doctors, or unnamed crowds. Focus only on victims/perpetrators.
-
-7. **MINOR_CHARACTER_BYPASS**:
-   - IF character is a MINOR: Avoid 'messy/dirty'. Use 'Candid family photo', 'wholesome', 'safe distance'.
+1. **THE_RAFAEL_STANDARD**: Visual fidelity: Images must look like throwaway smartphone snapshots. Skin Texture: Visible pores, natural sebum. Lighting: Diffused window light OR harsh direct flash.
+2. **UNIQUE_GENETICS_RULE**: Assign specific, unique facial geometry to every new character.
+3. **NORMAL_DAY_RULE**: Setting MUST be 'Home' or 'Leisure'. STRICTLY FORBIDDEN: Workplaces.
+4. **SOCIOECONOMIC_CONSISTENCY**: Match environment to financial status.
+5. **HAPPY_MASK_PROTOCOL**: POSITIVE/RELAXED expressions only. NO sad/crying.
+6. **THE_CAST_FILTER**: Focus only on victims/perpetrators. No police/doctors.
+7. **MINOR_CHARACTER_BYPASS**: IF minor: Use 'Candid family photo', 'wholesome'.
 
 **YOUR TASK:**
 The user will paste a True Crime Script. 
@@ -65,27 +44,52 @@ if password_input == ACCESS_PASSWORD:
     
     if st.button("Activate Lisa"):
         if user_script:
-            with st.spinner("Lisa is analyzing the script..."):
+            with st.spinner("Lisa is attempting to connect to Google Brain..."):
                 try:
                     # Setup Gemini with Lucas's Key
-                    # MAKE SURE THIS IS ONE SINGLE LINE:
                     genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
                     
-                    # USING THE STANDARD MODEL
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    # --- SOLOMON'S SMART SELECTOR ---
+                    # This logic tries multiple models until one works.
+                    model = None
+                    model_attempts = [
+                        'gemini-1.5-flash',
+                        'gemini-1.5-pro',
+                        'gemini-1.5-flash-001',
+                        'gemini-1.5-pro-001',
+                        'gemini-pro',
+                        'gemini-1.0-pro'
+                    ]
                     
-                    # Combine Lisa's Brain + The Script
-                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                    last_error = ""
+                    success_model = ""
+
+                    for m_name in model_attempts:
+                        try:
+                            # Try to initialize the model
+                            test_model = genai.GenerativeModel(m_name)
+                            # Combine Prompt
+                            full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                            # Try to Generate
+                            response = test_model.generate_content(full_prompt)
+                            # If we get here, it worked!
+                            model = test_model
+                            success_model = m_name
+                            break # Stop the loop, we found a winner
+                        except Exception as e:
+                            last_error = e
+                            continue # Try the next one
                     
-                    response = model.generate_content(full_prompt)
-                    
-                    # Display Result
-                    st.divider()
-                    st.write("### ✅ Lisa's Output:")
-                    st.markdown(response.text)
+                    if model:
+                        # Display Result
+                        st.divider()
+                        st.write(f"### ✅ Lisa's Output (Engine: {success_model}):")
+                        st.markdown(response.text)
+                    else:
+                        st.error(f"System Error: Could not connect to any Gemini models. Last Error: {last_error}")
                     
                 except Exception as e:
-                    st.error(f"System Error: {e}")
+                    st.error(f"Critical System Error: {e}")
         else:
             st.warning("Please paste a script first.")
             
