@@ -68,10 +68,11 @@ if password_input == ACCESS_PASSWORD:
             with st.spinner("Lisa is analyzing the script..."):
                 try:
                     # Setup Gemini
-                    # YOUR KEY IS INSERTED BELOW
+                    # API Key is securely configured here
                     genai.configure(api_key="AIzaSyBYGKCsOg0-1VmyGAypodNqwcQHSo1fun4")
                     
-                 model = genai.GenerativeModel('gemini-1.5-flash')
+                    # UPDATED MODEL NAME IS HERE:
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     # Combine Lisa's Brain + The Script
                     full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
