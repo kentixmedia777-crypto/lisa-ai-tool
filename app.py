@@ -60,35 +60,3 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ Access Granted")
     
     # 2. Input Area
-    st.write("### Paste the Script Below:")
-    user_script = st.text_area("Script Input", height=300, placeholder="Paste the true crime script here...")
-    
-    if st.button("Activate Lisa"):
-        if user_script:
-            with st.spinner("Lisa is analyzing the script..."):
-                try:
-                    # Setup Gemini with your Key
-                    genai.configure(api_key="AIzaSyBYGKCsOg0-1VmyGAypodNqwcQHSo1fun4")
-                    
-                    # WE USE THE NEW MODEL HERE:
-                    model = genai.GenerativeModel('gemini-2.0-flash')
-                    
-                    # Combine Lisa's Brain + The Script
-                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
-                    
-                    response = model.generate_content(full_prompt)
-                    
-                    # Display Result
-                    st.divider()
-                    st.write("### ✅ Lisa's Output:")
-                    st.markdown(response.text)
-                    
-                except Exception as e:
-                    st.error(f"System Error: {e}")
-        else:
-            st.warning("Please paste a script first.")
-            
-elif password_input:
-    st.sidebar.error("❌ Access Denied. Contact Kent for access.")
-else:
-    st.info("Please enter the password to access Lisa.")
