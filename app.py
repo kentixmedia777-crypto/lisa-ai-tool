@@ -68,5 +68,28 @@ if password_input == ACCESS_PASSWORD:
             with st.spinner("Lisa is analyzing the script..."):
                 try:
                     # Setup Gemini with Lucas's Key
-                    # This key is valid for the Free Tier
-                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6
+                    # MAKE SURE THIS IS ONE SINGLE LINE:
+                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                    
+                    # USING THE STANDARD MODEL
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    # Combine Lisa's Brain + The Script
+                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                    
+                    response = model.generate_content(full_prompt)
+                    
+                    # Display Result
+                    st.divider()
+                    st.write("### ✅ Lisa's Output:")
+                    st.markdown(response.text)
+                    
+                except Exception as e:
+                    st.error(f"System Error: {e}")
+        else:
+            st.warning("Please paste a script first.")
+            
+elif password_input:
+    st.sidebar.error("❌ Access Denied. Contact Kent for access.")
+else:
+    st.info("Please enter the password to access Lisa.")
