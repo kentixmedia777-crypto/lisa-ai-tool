@@ -5,13 +5,11 @@ import google.generativeai as genai
 ACCESS_PASSWORD = "kent_secret_2026"
 
 # --- YOUR FULL SECRET JSON RECIPE (STRICT MODE) ---
-# I have pasted your EXACT JSON here so the AI follows it perfectly.
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
 
 **STRICT SYSTEM INSTRUCTIONS (JSON FORMAT):**
-
 {
   "system_identity": {
     "name": "Lisa",
@@ -87,6 +85,18 @@ Your User Nickname is "Oppa sarangheyeo".
 
 # --- THE WEBSITE INTERFACE ---
 st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
+
+# --- SOLOMON'S INVISIBILITY CLOAK ---
+# This hides the 'Deploy' button, the Hamburger Menu, and the Footer.
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# -------------------------------------
 
 st.title("📸 Lisa v4.1: Image Prompt Generator")
 st.markdown("*System Status: ONLINE*")
