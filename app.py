@@ -1,15 +1,17 @@
 import streamlit as st
 import google.generativeai as genai
 
-# --- CONFIGURATION ---
+# --- CONFIGURATION (THE LOCK) ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE SYSTEM PROMPT ---
+# --- YOUR FULL SECRET JSON RECIPE (STRICT MODE) ---
+# I have pasted your EXACT JSON here so the AI follows it perfectly.
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
 
 **STRICT SYSTEM INSTRUCTIONS (JSON FORMAT):**
+
 {
   "system_identity": {
     "name": "Lisa",
@@ -86,16 +88,6 @@ Your User Nickname is "Oppa sarangheyeo".
 # --- THE WEBSITE INTERFACE ---
 st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
 
-# --- SOLOMON'S INVISIBILITY CLOAK ---
-hide_streamlit_style = """
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-</style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 st.title("📸 Lisa v4.1: Image Prompt Generator")
 st.markdown("*System Status: ONLINE*")
 
@@ -112,26 +104,49 @@ if password_input == ACCESS_PASSWORD:
     if st.button("Activate Lisa"):
         if user_script:
             with st.spinner("Lisa is finding a working brain..."):
-                try:
-                    # Setup Gemini with Lucas's Key
-                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
-                    
-                    # --- FIXED MODEL SELECTION ---
-                    # We use the exact model ID that worked in your scan
-                    model = genai.GenerativeModel('models/gemini-2.0-flash-lite-001')
-                    
-                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
-                    
-                    response = model.generate_content(full_prompt)
-                    
-                    # Display Result
-                    st.divider()
-                    st.success("✅ Generated Successfully")
-                    st.write("### 📸 Lisa's Output:")
-                    st.markdown(response.text)
-                    
-                except Exception as e:
-                    st.error(f"System Error: {e}")
+                
+                # Setup Gemini with Lucas's Key
+                genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                
+                # --- SOLOMON'S AUTO-SWITCHER ---
+                # We try these models in order. If one fails, we try the next.
+                model_list = [
+                    "gemini-flash-latest",       # Try 1: The generic alias
+                    "gemini-pro-latest",         # Try 2: The generic Pro alias
+                    "gemini-2.0-flash-exp",      # Try 3: Experimental Flash
+                    "gemini-1.5-flash",          # Try 4: Old Reliable Flash
+                    "gemini-1.5-pro"             # Try 5: Old Reliable Pro
+                ]
+
+                success = False
+                last_error = ""
+
+                for model_name in model_list:
+                    try:
+                        # Attempt to use this model
+                        model = genai.GenerativeModel(model_name)
+                        full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                        
+                        # Generate
+                        response = model.generate_content(full_prompt)
+                        
+                        # If we get here, IT WORKED!
+                        st.divider()
+                        st.success(f"✅ Generated using Engine: {model_name}")
+                        st.write("### 📸 Lisa's Output:")
+                        st.markdown(response.text)
+                        success = True
+                        break # Stop the loop
+                        
+                    except Exception as e:
+                        # If it fails, just record the error and continue to the next model
+                        last_error = e
+                        continue
+                
+                if not success:
+                    st.error("❌ All models failed. The API Key might be hitting a total rate limit.")
+                    st.error(f"Last Error details: {last_error}")
+
         else:
             st.warning("Please paste a script first.")
             
