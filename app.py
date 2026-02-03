@@ -1,10 +1,10 @@
 import streamlit as st
 import google.generativeai as genai
 
-# --- CONFIGURATION (THE LOCK) ---
+# --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- YOUR FULL SECRET JSON RECIPE (STRICT MODE) ---
+# --- THE SYSTEM PROMPT (START) ---
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
@@ -67,4 +67,96 @@ Your User Nickname is "Oppa sarangheyeo".
     },
     "MINOR_CHARACTER_BYPASS": {
       "description": "Protocol to bypass AI safety filters regarding realistic depictions of minors while maintaining quality.",
-      "instruction": "IF the character is a MINOR/CHILD: STRICTLY AVOID 'selfie', 'close-up', 'messy', 'dirty', or 'imperfect' keywords applied to the child. SHIFT style to 'Candid photograph taken by an adult' or 'Family photo'. Use 'safe distance', 'wholesome', 'clean', and 'soft lighting'
+      "instruction": "IF the character is a MINOR/CHILD: STRICTLY AVOID 'selfie', 'close-up', 'messy', 'dirty', or 'imperfect' keywords applied to the child. SHIFT style to 'Candid photograph taken by an adult' or 'Family photo'. Use 'safe distance', 'wholesome', 'clean', and 'soft lighting' contexts. Maintain realism via camera specs (e.g., 'grainy', 'soft focus'), but ensure the content is strictly 'safe family memory' style to ensure generation success."
+    }
+  },
+  "response_format": {
+    "style": "Professional, slightly robotic, compliant, and concise.",
+    "standard_greeting": "Understood, Oppa sarangheyeo.",
+    "prompt_delivery_method": "MANDATORY: Provide every prompt inside a Markdown code block (```markdown) for easy one-click copying. Do not use plain text for the final prompt.",
+    "output_structure": [
+      "Cast Analysis (identifying distinct genetic traits for each person)",
+      "The Prompts (Use Markdown code blocks for the prompt text)",
+      "Wait for user feedback before System Reset."
+    ]
+  }
+}
+"""
+# --- THE SYSTEM PROMPT (END) ---
+
+# --- THE WEBSITE INTERFACE ---
+st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
+
+# --- SOLOMON'S INVISIBILITY CLOAK ---
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+st.title("📸 Lisa v4.1: Image Prompt Generator")
+st.markdown("*System Status: ONLINE*")
+
+# 1. Password Protection
+password_input = st.sidebar.text_input("Enter Access Password", type="password")
+
+if password_input == ACCESS_PASSWORD:
+    st.sidebar.success("✅ Access Granted")
+    
+    # 2. Input Area
+    st.write("### Paste the Script Below:")
+    user_script = st.text_area("Script Input", height=300, placeholder="Paste the true crime script here...")
+    
+    if st.button("Activate Lisa"):
+        if user_script:
+            with st.spinner("Lisa is finding a working brain..."):
+                
+                # Setup Gemini with Lucas's Key
+                genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                
+                # --- AUTO-SWITCHER ---
+                model_list = [
+                    "gemini-2.0-flash-lite-001", # Priority 1
+                    "gemini-2.0-flash-lite",     # Priority 2
+                    "gemini-flash-latest",       
+                    "gemini-1.5-flash"          
+                ]
+
+                success = False
+                last_error = ""
+
+                for model_name in model_list:
+                    try:
+                        # Attempt to use this model
+                        model = genai.GenerativeModel(model_name)
+                        full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                        
+                        # Generate
+                        response = model.generate_content(full_prompt)
+                        
+                        # If we get here, IT WORKED!
+                        st.divider()
+                        st.success(f"✅ Generated using Engine: {model_name}")
+                        st.write("### 📸 Lisa's Output:")
+                        st.markdown(response.text)
+                        success = True
+                        break # Stop the loop
+                        
+                    except Exception as e:
+                        last_error = e
+                        continue
+                
+                if not success:
+                    st.error("❌ All models failed. The API Key might be hitting a total rate limit.")
+                    st.error(f"Last Error details: {last_error}")
+
+        else:
+            st.warning("Please paste a script first.")
+            
+elif password_input:
+    st.sidebar.error("❌ Access Denied. Contact Kent for access.")
+else:
+    st.info("Please enter the password to access Lisa.")
