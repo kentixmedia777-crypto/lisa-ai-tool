@@ -113,12 +113,12 @@ if password_input == ACCESS_PASSWORD:
     if st.button("Activate Lisa"):
         if user_script:
             
-            # --- THE HYDRA STRATEGY (AUTO-SWITCHER) ---
-            # List of brains to try, in order.
+            # --- THE HYDRA STRATEGY (RE-ORDERED) ---
+            # We put "1.5 Flash" FIRST because it is the most reliable.
             brain_list = [
-                "gemini-2.0-flash-lite-001",  # Brain 1 (Newest)
-                "gemini-1.5-flash",           # Brain 2 (Reliable)
-                "gemini-1.5-pro"              # Brain 3 (High Quality)
+                "gemini-1.5-flash",           # Brain 1 (The Reliable Workhorse)
+                "gemini-1.5-flash-latest",    # Brain 2 (Backup Flash)
+                "gemini-2.0-flash-lite-001"   # Brain 3 (The New One - Last Resort due to limits)
             ]
             
             success = False
@@ -158,10 +158,9 @@ if password_input == ACCESS_PASSWORD:
                     break # Stop looping, we found a winner.
                     
                 except Exception as e:
-                    # If this brain fails, print a small warning and try the next one
-                    # st.warning(f"Brain {model_name} failed. Switching...") # Optional: Uncomment to see failures
+                    # If this brain fails, we record error and try the next
                     last_error = e
-                    time.sleep(1) # Wait 1 second before trying next brain
+                    time.sleep(1) 
                     continue
             
             if not success:
