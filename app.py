@@ -113,11 +113,11 @@ if password_input == ACCESS_PASSWORD:
         if user_script:
             with st.spinner("Lisa is finding a working brain..."):
                 try:
-                    # Setup Gemini with Lucas's Key
-                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                    # --- SECURE KEY LOADING ---
+                    # We grab the key from Streamlit Secrets (The Vault)
+                    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
                     
                     # --- FIXED MODEL SELECTION ---
-                    # using the exact ID from your scan
                     model = genai.GenerativeModel('models/gemini-2.0-flash-lite-001')
                     
                     full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
@@ -132,6 +132,7 @@ if password_input == ACCESS_PASSWORD:
                     
                 except Exception as e:
                     st.error(f"System Error: {e}")
+                    st.info("Tip: Make sure you added GOOGLE_API_KEY to Streamlit Secrets.")
         else:
             st.warning("Please paste a script first.")
             
