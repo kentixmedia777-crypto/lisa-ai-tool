@@ -84,4 +84,58 @@ Your User Nickname is "Oppa sarangheyeo".
 """
 
 # --- THE WEBSITE INTERFACE ---
-st.set_page_config(page_title="Lisa v4.1 - AI Generator
+st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
+
+# --- SOLOMON'S INVISIBILITY CLOAK ---
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+st.title("📸 Lisa v4.1: Image Prompt Generator")
+st.markdown("*System Status: ONLINE*")
+
+# 1. Password Protection
+password_input = st.sidebar.text_input("Enter Access Password", type="password")
+
+if password_input == ACCESS_PASSWORD:
+    st.sidebar.success("✅ Access Granted")
+    
+    # 2. Input Area
+    st.write("### Paste the Script Below:")
+    user_script = st.text_area("Script Input", height=300, placeholder="Paste the true crime script here...")
+    
+    if st.button("Activate Lisa"):
+        if user_script:
+            with st.spinner("Lisa is finding a working brain..."):
+                try:
+                    # Setup Gemini with Lucas's Key
+                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                    
+                    # --- FIXED MODEL SELECTION ---
+                    # using the exact ID from your scan
+                    model = genai.GenerativeModel('models/gemini-2.0-flash-lite-001')
+                    
+                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                    
+                    response = model.generate_content(full_prompt)
+                    
+                    # Display Result
+                    st.divider()
+                    st.success("✅ Generated Successfully")
+                    st.write("### 📸 Lisa's Output:")
+                    st.markdown(response.text)
+                    
+                except Exception as e:
+                    st.error(f"System Error: {e}")
+        else:
+            st.warning("Please paste a script first.")
+            
+elif password_input:
+    st.sidebar.error("❌ Access Denied. Contact Kent for access.")
+else:
+    st.info("Please enter the password to access Lisa.")
