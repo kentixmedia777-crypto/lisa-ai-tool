@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
@@ -111,28 +112,63 @@ if password_input == ACCESS_PASSWORD:
     
     if st.button("Activate Lisa"):
         if user_script:
-            with st.spinner("Lisa is finding a working brain..."):
+            
+            # --- THE HYDRA STRATEGY (AUTO-SWITCHER) ---
+            # List of brains to try, in order.
+            brain_list = [
+                "gemini-2.0-flash-lite-001",  # Brain 1 (Newest)
+                "gemini-1.5-flash",           # Brain 2 (Reliable)
+                "gemini-1.5-pro"              # Brain 3 (High Quality)
+            ]
+            
+            success = False
+            last_error = ""
+            
+            # Access the Key from the Safe
+            try:
+                genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+            except:
+                st.error("❌ Key Error: Could not find GOOGLE_API_KEY in Streamlit Secrets.")
+                st.stop()
+
+            # Start the loop
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for i, model_name in enumerate(brain_list):
+                status_text.text(f"Lisa is looking for a working brain... (Attempting connection to {model_name})")
+                progress_bar.progress((i + 1) * 30)
+                
                 try:
-                    # --- SECURE KEY LOADING ---
-                    # We grab the key from Streamlit Secrets (The Vault)
-                    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-                    
-                    # --- FIXED MODEL SELECTION ---
-                    model = genai.GenerativeModel('models/gemini-2.0-flash-lite-001')
-                    
+                    # Initialize the specific model
+                    model = genai.GenerativeModel(model_name)
                     full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
                     
+                    # Generate
                     response = model.generate_content(full_prompt)
                     
-                    # Display Result
+                    # IF WE REACH HERE, IT WORKED!
                     st.divider()
-                    st.success("✅ Generated Successfully")
+                    st.success(f"✅ Success! Connected to Brain: {model_name}")
                     st.write("### 📸 Lisa's Output:")
                     st.markdown(response.text)
+                    success = True
+                    progress_bar.progress(100)
+                    status_text.text("Done.")
+                    break # Stop looping, we found a winner.
                     
                 except Exception as e:
-                    st.error(f"System Error: {e}")
-                    st.info("Tip: Make sure you added GOOGLE_API_KEY to Streamlit Secrets.")
+                    # If this brain fails, print a small warning and try the next one
+                    # st.warning(f"Brain {model_name} failed. Switching...") # Optional: Uncomment to see failures
+                    last_error = e
+                    time.sleep(1) # Wait 1 second before trying next brain
+                    continue
+            
+            if not success:
+                st.error("❌ All Brains Failed.")
+                st.error(f"Last Error Details: {last_error}")
+                st.info("The servers might be overloaded. Please wait 1 minute and try again.")
+
         else:
             st.warning("Please paste a script first.")
             
