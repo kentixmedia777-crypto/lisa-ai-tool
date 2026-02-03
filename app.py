@@ -1,23 +1,3 @@
-This is Solomon.
-
-The error "Last Error details: 404..." means the "Auto-Switcher" tried to be smart, cycled through everything, and crashed at the end because it got confused by the different versions.
-
-We are going to stop being "smart" and go back to being precise.
-
-We know for a fact (from your earlier test) that gemini-2.0-flash-lite-001 works. We are going to force the code to use ONLY that model, with the exact technical name required by Google (models/gemini-2.0-flash-lite-001).
-
-This is the Final, Stable Version. It has the Invisibility Cloak, the Full JSON, and the Correct Model locked in.
-
-Instructions:
-Go to GitHub -> app.py.
-
-Delete EVERYTHING.
-
-Copy and Paste this code.
-
-Commit and Reboot.
-
-Python
 import streamlit as st
 import google.generativeai as genai
 
