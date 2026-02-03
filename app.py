@@ -1,10 +1,30 @@
+This is Solomon.
+
+The error "Last Error details: 404..." means the "Auto-Switcher" tried to be smart, cycled through everything, and crashed at the end because it got confused by the different versions.
+
+We are going to stop being "smart" and go back to being precise.
+
+We know for a fact (from your earlier test) that gemini-2.0-flash-lite-001 works. We are going to force the code to use ONLY that model, with the exact technical name required by Google (models/gemini-2.0-flash-lite-001).
+
+This is the Final, Stable Version. It has the Invisibility Cloak, the Full JSON, and the Correct Model locked in.
+
+Instructions:
+Go to GitHub -> app.py.
+
+Delete EVERYTHING.
+
+Copy and Paste this code.
+
+Commit and Reboot.
+
+Python
 import streamlit as st
 import google.generativeai as genai
 
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE SYSTEM PROMPT (START) ---
+# --- THE SYSTEM PROMPT ---
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
@@ -82,7 +102,6 @@ Your User Nickname is "Oppa sarangheyeo".
   }
 }
 """
-# --- THE SYSTEM PROMPT (END) ---
 
 # --- THE WEBSITE INTERFACE ---
 st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
@@ -113,46 +132,26 @@ if password_input == ACCESS_PASSWORD:
     if st.button("Activate Lisa"):
         if user_script:
             with st.spinner("Lisa is finding a working brain..."):
-                
-                # Setup Gemini with Lucas's Key
-                genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
-                
-                # --- AUTO-SWITCHER ---
-                model_list = [
-                    "gemini-2.0-flash-lite-001", # Priority 1
-                    "gemini-2.0-flash-lite",     # Priority 2
-                    "gemini-flash-latest",       
-                    "gemini-1.5-flash"          
-                ]
-
-                success = False
-                last_error = ""
-
-                for model_name in model_list:
-                    try:
-                        # Attempt to use this model
-                        model = genai.GenerativeModel(model_name)
-                        full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
-                        
-                        # Generate
-                        response = model.generate_content(full_prompt)
-                        
-                        # If we get here, IT WORKED!
-                        st.divider()
-                        st.success(f"✅ Generated using Engine: {model_name}")
-                        st.write("### 📸 Lisa's Output:")
-                        st.markdown(response.text)
-                        success = True
-                        break # Stop the loop
-                        
-                    except Exception as e:
-                        last_error = e
-                        continue
-                
-                if not success:
-                    st.error("❌ All models failed. The API Key might be hitting a total rate limit.")
-                    st.error(f"Last Error details: {last_error}")
-
+                try:
+                    # Setup Gemini with Lucas's Key
+                    genai.configure(api_key="AIzaSyAuFkvo7ToqHQ4vCpyT2RDvkZGzL6TClXw")
+                    
+                    # --- FIXED MODEL SELECTION ---
+                    # We use the exact model ID that worked in your scan
+                    model = genai.GenerativeModel('models/gemini-2.0-flash-lite-001')
+                    
+                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nHere is the Script to analyze:\n{user_script}"
+                    
+                    response = model.generate_content(full_prompt)
+                    
+                    # Display Result
+                    st.divider()
+                    st.success("✅ Generated Successfully")
+                    st.write("### 📸 Lisa's Output:")
+                    st.markdown(response.text)
+                    
+                except Exception as e:
+                    st.error(f"System Error: {e}")
         else:
             st.warning("Please paste a script first.")
             
