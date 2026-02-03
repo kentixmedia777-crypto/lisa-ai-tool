@@ -5,7 +5,7 @@ import time
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE SYSTEM PROMPT ---
+# --- THE SYSTEM PROMPT (FULL JSON MODE) ---
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
@@ -113,31 +113,36 @@ if password_input == ACCESS_PASSWORD:
     if st.button("Activate Lisa"):
         if user_script:
             
-            # --- THE HYDRA STRATEGY (RE-ORDERED) ---
-            # We put "1.5 Flash" FIRST because it is the most reliable.
-            brain_list = [
-                "gemini-1.5-flash",           # Brain 1 (The Reliable Workhorse)
-                "gemini-1.5-flash-latest",    # Brain 2 (Backup Flash)
-                "gemini-2.0-flash-lite-001"   # Brain 3 (The New One - Last Resort due to limits)
+            # --- THE HYDRA STRATEGY (AUTO-SWITCHER) ---
+            # Priority Order: Reliable -> Backup -> Experimental
+            model_list = [
+                "gemini-1.5-flash",           # Priority 1: High Quota, Very Stable
+                "gemini-flash-latest",        # Priority 2: Generic alias
+                "gemini-2.0-flash-lite-001",  # Priority 3: The New One (might fail quota)
+                "gemini-1.5-pro"              # Priority 4: High Quality (might hit rate limit)
             ]
             
             success = False
             last_error = ""
-            
-            # Access the Key from the Safe
+
+            # Connect to the Safe
             try:
-                genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-            except:
-                st.error("❌ Key Error: Could not find GOOGLE_API_KEY in Streamlit Secrets.")
+                if "GOOGLE_API_KEY" in st.secrets:
+                    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+                else:
+                    st.error("❌ Key Error: Secret 'GOOGLE_API_KEY' not found.")
+                    st.stop()
+            except Exception as e:
+                st.error(f"Configuration Error: {e}")
                 st.stop()
 
-            # Start the loop
+            # Start the Search for a Brain
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            for i, model_name in enumerate(brain_list):
-                status_text.text(f"Lisa is looking for a working brain... (Attempting connection to {model_name})")
-                progress_bar.progress((i + 1) * 30)
+            for i, model_name in enumerate(model_list):
+                status_text.text(f"Lisa is looking for a working brain... (Trying: {model_name})")
+                progress_bar.progress((i + 1) * 25)
                 
                 try:
                     # Initialize the specific model
@@ -158,9 +163,9 @@ if password_input == ACCESS_PASSWORD:
                     break # Stop looping, we found a winner.
                     
                 except Exception as e:
-                    # If this brain fails, we record error and try the next
+                    # If this brain fails, try the next
                     last_error = e
-                    time.sleep(1) 
+                    time.sleep(1) # Brief pause
                     continue
             
             if not success:
