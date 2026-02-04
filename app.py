@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import time
 import base64
 
 # --- CONFIGURATION ---
@@ -11,7 +12,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.6",
+    "version": "v10.7",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -85,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN ---
-st.set_page_config(page_title="LISA v10.6", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v10.7", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -107,11 +108,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (SIMPLE MODE - NO LOOP) ---
+# --- THE ENGINE (INVISIBLE AIRBAG MODE) ---
 def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
-    # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     
@@ -129,31 +129,48 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # WE TARGET ONLY THE MAIN MODEL
+    # WE TARGET THE FASTEST MODEL
     model = "gemini-2.0-flash"
     endpoint = f"/v1beta/models/{model}:generateContent"
     params = f"?key={clean_key}"
     url = base_url + endpoint + params
         
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        
-        # SUCCESS
-        if response.status_code == 200:
-            result = response.json()
-            if 'candidates' in result: 
-                return result['candidates'][0]['content']['parts'][0]['text']
-            return f"GOOGLE ERROR: Response was empty. {str(result)}"
-        
-        # ERROR - PRINT THE RAW TEXT
-        else:
-            return f"API ERROR {response.status_code}: {response.text}"
+    # --- AIRBAG LOGIC ---
+    # Try once. If traffic jam (429), wait silently and try again.
+    # No red errors.
+    
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            
+            # SUCCESS
+            if response.status_code == 200:
+                result = response.json()
+                if 'candidates' in result: 
+                    return result['candidates'][0]['content']['parts'][0]['text']
+                return f"GOOGLE ERROR: Response was empty. {str(result)}"
+            
+            # TRAFFIC (429)
+            elif response.status_code == 429:
+                # If we have attempts left, wait silently
+                if attempt < max_attempts - 1:
+                    time.sleep(10) # Wait 10 seconds before next try
+                    continue
+                else:
+                    return f"API ERROR {response.status_code}: Too much traffic. Please wait 1 minute."
+            
+            # OTHER ERRORS
+            else:
+                return f"API ERROR {response.status_code}: {response.text}"
 
-    except Exception as e:
-        return f"PYTHON CONNECTION ERROR: {str(e)}"
+        except Exception as e:
+            return f"CONNECTION ERROR: {str(e)}"
+            
+    return "SYSTEM ERROR: Connection timeout."
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10.6")
+st.title("LISA v10.7")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -188,6 +205,7 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE ENGINE ---
+            # We show a spinner while the "Airbag Logic" runs in the background
             with st.spinner(f"🚀 Lisa is executing via gemini-2.0-flash..."):
                 result = generate_content_raw(final_api_key, user_script)
                 
@@ -199,7 +217,6 @@ if password_input == ACCESS_PASSWORD:
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
-                    # PRINT THE RAW ERROR SO WE KNOW WHAT IS WRONG
                     st.code(result) 
         else:
             st.warning("⚠️ Input Buffer Empty")
