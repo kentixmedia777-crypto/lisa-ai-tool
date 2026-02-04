@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import time
 import base64
 
 # --- CONFIGURATION ---
@@ -11,7 +12,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v11.0",
+    "version": "v12.0",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -84,8 +85,8 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN ---
-st.set_page_config(page_title="LISA v11.0", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN (CLEAN ENTERPRISE) ---
+st.set_page_config(page_title="LISA v12.0", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -107,10 +108,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (GATLING GUN MODE) ---
+# --- THE ENGINE (PROFESSIONAL MODE) ---
 def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
+    # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     
@@ -128,50 +130,47 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # --- THE GATLING GUN BARREL ---
-    # We load 3 bullets (Models). We fire them one by one instantly.
-    models = [
-        "gemini-2.0-flash",       # Bullet 1 (Fastest)
-        "gemini-2.0-flash-lite",  # Bullet 2 (Backup)
-        "gemini-1.5-flash"        # Bullet 3 (Old Faithful)
-    ]
-    
-    for i, model in enumerate(models):
-        endpoint = f"/v1beta/models/{model}:generateContent"
-        params = f"?key={clean_key}"
-        url = base_url + endpoint + params
+    # TARGET: THE BEST MODEL ONLY
+    model = "gemini-2.0-flash"
+    endpoint = f"/v1beta/models/{model}:generateContent"
+    params = f"?key={clean_key}"
+    url = base_url + endpoint + params
         
+    # --- PRO RETRY LOOP ---
+    # Fast try. If fail, wait 5s (Micro-pause). If fail, STOP.
+    max_attempts = 2
+    
+    for attempt in range(max_attempts):
         try:
-            # FIRE!
             response = requests.post(url, headers=headers, json=data)
             
-            # HIT! (Success)
+            # SUCCESS
             if response.status_code == 200:
                 result = response.json()
                 if 'candidates' in result: 
                     return result['candidates'][0]['content']['parts'][0]['text']
-                # If empty, just keep going to next bullet
+                return f"GOOGLE ERROR: Response was empty. {str(result)}"
             
-            # JAMMED! (429 Traffic) -> INSTANTLY NEXT BULLET
+            # TRAFFIC (429)
             elif response.status_code == 429:
-                continue # No waiting. Just next model.
+                if attempt < max_attempts - 1:
+                    # Micro-wait (5 seconds)
+                    time.sleep(5) 
+                    continue
+                else:
+                    return f"QUOTA ERROR: This API Key is exhausted. Please swap keys."
             
-            # DEAD! (404 Not Found) -> INSTANTLY NEXT BULLET
-            elif response.status_code == 404:
-                continue
-            
-            # OTHER ERROR
+            # OTHER ERRORS
             else:
-                continue
+                return f"API ERROR {response.status_code}: {response.text}"
 
-        except Exception:
-            continue
+        except Exception as e:
+            return f"CONNECTION ERROR: {str(e)}"
             
-    # If all 3 bullets fail:
-    return "CRITICAL FAILURE: All neural paths blocked. Please check your API Key quota."
+    return "SYSTEM ERROR: Connection timeout."
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v11.0")
+st.title("LISA v12.0")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -189,7 +188,7 @@ if password_input == ACCESS_PASSWORD:
     else:
         final_api_key = None
         st.sidebar.error("❌ Key Missing")
-        st.sidebar.warning("Please add 'GOOGLE_API_KEY' to Streamlit Secrets.")
+        st.sidebar.warning("Check Secrets File")
 
     st.sidebar.markdown("---")
     
@@ -206,18 +205,17 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE ENGINE ---
-            with st.spinner(f"🚀 Lisa is engaging multi-model rapid fire..."):
+            with st.spinner(f"🚀 Lisa is analyzing..."):
                 result = generate_content_raw(final_api_key, user_script)
                 
-                # CHECK FOR SUCCESS
-                if "FAILURE" not in result:
+                # CHECK FOR SUCCESS INDICATORS
+                if "ERROR" not in result:
                     st.markdown("---")
                     st.success(f"✅ Analysis Complete")
                     st.markdown("### 📸 Visual Analysis & Prompts")
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
-                    st.info("ℹ️ All fast lanes are blocked. This means your 3rd Key might also be exhausted.")
                     st.code(result) 
         else:
             st.warning("⚠️ Input Buffer Empty")
