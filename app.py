@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.9 - Stealth", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.10 - Lite", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -109,10 +109,9 @@ def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
     # 1. ENCRYPTED URL (Base64) - This prevents your editor from seeing a link
-    # The hidden text is: "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     
-    # 2. DECODE IT (The code rebuilds the link safely)
+    # 2. DECODE IT
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     
     # 3. CONSTRUCT THE REST
@@ -150,7 +149,7 @@ def generate_content_raw(api_key, model_name, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v9.9")
+st.title("LISA v9.10")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -187,12 +186,13 @@ if password_input == ACCESS_PASSWORD:
                 st.stop()
                 
             if user_script:
-                # --- THE HYDRA LIST (Gemini Flash Family) ---
+                # --- THE HYDRA LIST (UPDATED FOR 2.0 LITE) ---
+                # We removed the broken 1.5 models and added the working 2.0 Lite models
                 models = [
-                    "gemini-1.5-flash", 
-                    "gemini-1.5-flash-latest", 
-                    "gemini-1.5-flash-8b",
-                    "gemini-1.5-pro"
+                    "gemini-2.0-flash-lite-preview-02-05", # Priority 1: Newest/Fastest
+                    "gemini-2.0-flash-lite",               # Priority 2: Stable Lite
+                    "gemini-flash-latest",                 # Priority 3: Standard Latest
+                    "gemini-1.5-flash-latest"              # Priority 4: Legacy Backup
                 ]
                 
                 success = False
@@ -216,7 +216,7 @@ if password_input == ACCESS_PASSWORD:
                 
                 if not success:
                     st.error("❌ System Failure: All Neural Nodes Unresponsive.")
-                    st.info("Diagnostic: Check your API Key Quota or Internet Connection.")
+                    st.info("Diagnostic: Your API Key is valid, but Google's Free Quota is full for all models right now. Please wait 1 hour.")
                     st.code(result)
             else:
                 st.warning("⚠️ Input Buffer Empty")
