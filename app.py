@@ -12,7 +12,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.4",
+    "version": "v10.5",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -85,8 +85,8 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN (CLEAN ENTERPRISE) ---
-st.set_page_config(page_title="LISA v10.4", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN ---
+st.set_page_config(page_title="LISA v10.5", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -102,22 +102,19 @@ st.markdown("""
     .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
     code { color: #e4e6eb; background-color: #3a3b3c; }
     
-    /* SUCCESS BADGES (CLEAN LOOK) */
+    /* SUCCESS BADGES */
     .stSuccess { background-color: #2e7d32 !important; color: white !important; border: none; }
     .stInfo { background-color: #1565c0 !important; color: white !important; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (SMART TANK MODE) ---
-def generate_content_raw(api_key, model_name, script):
+# --- THE ENGINE (LANE SWITCHING MODE) ---
+def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
     # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
-    endpoint = f"/v1beta/models/{model_name}:generateContent"
-    params = f"?key={clean_key}"
-    url = base_url + endpoint + params
     
     # SYSTEM PROMPT
     final_instruction = f"""
@@ -132,11 +129,25 @@ def generate_content_raw(api_key, model_name, script):
     
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
+
+    # --- MODEL LIST (Based on your scan) ---
+    # Priority 1: Flash 2.0 (Fastest)
+    # Priority 2: Flash Lite (Backup)
+    # Priority 3: Flash Lite Preview (Deep Backup)
+    models = [
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash-lite-preview-02-05"
+    ]
     
-    # --- SMART RETRY LOOP ---
-    max_retries = 3
-    for attempt in range(max_retries):
+    # --- SWITCHING LOOP ---
+    for i, model in enumerate(models):
+        endpoint = f"/v1beta/models/{model}:generateContent"
+        params = f"?key={clean_key}"
+        url = base_url + endpoint + params
+        
         try:
+            # st.write(f"Trying {model}...") # Debug line (Hidden)
             response = requests.post(url, headers=headers, json=data)
             
             # SUCCESS
@@ -144,26 +155,30 @@ def generate_content_raw(api_key, model_name, script):
                 result = response.json()
                 if 'candidates' in result: 
                     return result['candidates'][0]['content']['parts'][0]['text']
-                return "ERROR: Empty Response from Google."
+                # If response is empty, don't crash, just try next model
             
-            # TRAFFIC JAM (429) - AUTO WAIT
+            # TRAFFIC JAM (429) -> IMMEDIATE SWITCH
             elif response.status_code == 429:
-                wait_time = (attempt + 1) * 30 
-                st.warning(f"⚠️ High Traffic (Attempt {attempt+1}/{max_retries}). Lisa is waiting {wait_time}s to clear the path...")
-                bar = st.progress(0)
-                for i in range(100):
-                    time.sleep(wait_time / 100)
-                    bar.progress(i + 1)
-            else:
-                return f"ERROR {response.status_code}: {response.text}"
-                
-        except Exception as e:
-            return f"CONNECTION ERROR: {str(e)}"
+                if i < len(models) - 1:
+                    st.warning(f"⚠️ Node {model} busy. Switching to backup lane...")
+                    time.sleep(1) # Tiny pause before switch
+                    continue # Jump to next model immediately
+                else:
+                    # If ALL models failed 429, then we wait.
+                    st.error("❌ All traffic lanes full.")
+                    return "CRITICAL FAILURE: All models are busy. Please wait 1 minute."
             
-    return "CRITICAL FAILURE: Google Traffic is too heavy. Please try again in 5 minutes."
+            # OTHER ERROR (404 etc) -> SKIP
+            else:
+                continue
+
+        except Exception as e:
+            continue
+            
+    return "SYSTEM ERROR: Connection failed on all channels."
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10.4")
+st.title("LISA v10.5")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -174,13 +189,11 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.markdown("---")
     
     # --- SECURE KEY LOADING ---
-    # We ONLY check st.secrets now. Safe and Secure.
     if "GOOGLE_API_KEY" in st.secrets:
         final_api_key = st.secrets["GOOGLE_API_KEY"]
         st.sidebar.success("✅ License Key Active")
         st.sidebar.info("Authorized for: Lucalles Productions")
     else:
-        # If the user forgot to put it in secrets, we show a clean error.
         final_api_key = None
         st.sidebar.error("❌ Key Missing")
         st.sidebar.warning("Please add 'GOOGLE_API_KEY' to Streamlit Secrets.")
@@ -200,10 +213,8 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE ENGINE ---
-            model = "gemini-2.0-flash" 
-            
-            with st.spinner(f"🚀 Lisa is executing via {model}..."):
-                result = generate_content_raw(final_api_key, model, user_script)
+            with st.spinner(f"🚀 Lisa is finding the fastest open channel..."):
+                result = generate_content_raw(final_api_key, user_script)
                 
                 if "ERROR" not in result and "FAILURE" not in result:
                     st.markdown("---")
