@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import json
-import time
 import base64
 
 # --- CONFIGURATION ---
@@ -12,7 +11,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v13.0",
+    "version": "v14.0",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -85,22 +84,36 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN ---
-st.set_page_config(page_title="LISA v13.0", page_icon="lz", layout="wide")
+# --- BLUE THEME (VISUAL CONFIRMATION OF UPDATE) ---
+st.set_page_config(page_title="LISA v14 (BLUE)", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
-    /* META DARK MODE THEME */
-    .stApp { background-color: #18191a; }
-    [data-testid="stSidebar"] { background-color: #242526; border-right: 1px solid #3e4042; }
-    h1 { color: #2D88FF !important; font-family: 'Helvetica Neue', sans-serif; font-weight: 800; border-bottom: 1px solid #3e4042; padding-bottom: 15px; }
-    h3, h4, p, label, .stMarkdown { color: #e4e6eb !important; }
-    .stTextArea textarea, .stTextInput input { background-color: #3a3b3c !important; color: #e4e6eb !important; border: 1px solid #3e4042; border-radius: 8px; }
-    .stTextArea textarea:focus, .stTextInput input:focus { border-color: #2D88FF; box-shadow: 0 0 0 1px #2D88FF; }
-    .stButton>button { background-color: #2D88FF; color: white; border-radius: 6px; font-weight: 700; border: none; padding: 12px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); }
-    .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
-    code { color: #e4e6eb; background-color: #3a3b3c; }
+    /* FORCE BLUE THEME */
+    .stApp { background-color: #0d1b2a; } /* Deep Navy Blue */
+    [data-testid="stSidebar"] { background-color: #1b263b; border-right: 1px solid #415a77; }
+    h1 { color: #00b4d8 !important; border-bottom: 2px solid #00b4d8; }
+    h3, h4, p, label, .stMarkdown { color: #e0e1dd !important; }
+    
+    /* INPUT BOXES */
+    .stTextArea textarea, .stTextInput input { 
+        background-color: #415a77 !important; 
+        color: white !important; 
+        border: 1px solid #778da9; 
+    }
+    
+    /* BUTTONS */
+    .stButton>button { 
+        background-color: #00b4d8; 
+        color: #0d1b2a; 
+        font-weight: 800; 
+        border-radius: 4px;
+    }
+    .stButton>button:hover { background-color: #90e0ef; }
+    
+    /* ERROR/SUCCESS BOXES */
+    .stSuccess { background-color: #2e7d32 !important; color: white !important; }
+    .stError { background-color: #c62828 !important; color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -124,7 +137,7 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # TARGET: GEMINI 2.0 FLASH (FASTEST)
+    # TARGET: GEMINI 2.0 FLASH
     model = "gemini-2.0-flash"
     endpoint = f"/v1beta/models/{model}:generateContent"
     params = f"?key={clean_key}"
@@ -140,7 +153,7 @@ def generate_content_raw(api_key, script):
             return f"GOOGLE ERROR: Response was empty. {str(result)}"
         
         elif response.status_code == 429:
-             return f"API ERROR 429: This specific key is exhausted. Please double check you pasted the NEW key."
+             return f"API ERROR 429: Traffic Limit. This confirms the new key is being used but is busy."
         
         else:
             return f"API ERROR {response.status_code}: {response.text}"
@@ -149,26 +162,25 @@ def generate_content_raw(api_key, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v13.0")
-st.markdown("### AI Visual Architect | Dark Enterprise Edition")
-st.write("") 
+st.title("LISA v14 (BLUE)")
+st.markdown("### AI Visual Architect | Force Update Edition")
 
 password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
 
 if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
-    
-    # --- DIRECT KEY INPUT (MANDATORY) ---
     st.sidebar.markdown("---")
-    st.sidebar.info("🔑 PASTE NEW KEY HERE")
-    # This input box is now the ONLY way to provide the key.
-    # It bypasses the Secrets file completely to ensure we use the fresh key.
-    manual_key = st.sidebar.text_input("Fresh API Key", type="password", help="Paste your unused key here.")
     
+    # --- MANDATORY NEW KEY INPUT ---
+    st.sidebar.info("🔑 PASTE 4th KEY HERE")
+    manual_key = st.sidebar.text_input("New API Key", type="password", help="Paste your unused key here.")
+    
+    # VISUAL CONFIRMATION
     if manual_key:
-        st.sidebar.success("✅ New Key Loaded")
-    else:
-        st.sidebar.error("❌ Key Required")
+        if len(manual_key) > 30:
+            st.sidebar.success("✅ Valid Key Format Detected")
+        else:
+            st.sidebar.warning("⚠️ Key looks too short")
     
     st.sidebar.markdown("---")
     
@@ -176,16 +188,15 @@ if password_input == ACCESS_PASSWORD:
     st.markdown("#### 🎬 Script Ingestion")
     user_script = st.text_area("Input Stream", height=300, placeholder="Paste your true crime script here...", label_visibility="collapsed")
     
-    st.write("") # Spacer
+    st.write("") 
     
     if st.button("Initialize Lisa"):
         if not manual_key:
-            st.error("⚠️ System Halted: You must paste the new key in the sidebar.")
+            st.error("⚠️ STOP: You must paste the NEW key in the sidebar box.")
             st.stop()
             
         if user_script:
             with st.spinner(f"🚀 Lisa is executing via gemini-2.0-flash..."):
-                # We pass the manual_key DIRECTLY to the engine
                 result = generate_content_raw(manual_key, user_script)
                 
                 if "ERROR" not in result:
