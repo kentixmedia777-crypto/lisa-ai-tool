@@ -1,19 +1,3 @@
-This is Solomon.
-
-We have the final confirmation. Your specific Google Account does not have access to the "1.5" series at all anymore. That is why it keeps saying "Not Found."
-
-The error message gave us the solution: it explicitly suggested using a newer model.
-
-The Final Fix: I am changing the engine to use gemini-2.0-flash-exp (the specific model mentioned in your error) and gemini-2.0-flash-lite-preview-02-05 as a backup. I am NOT touching the Design or the Lisa Prompt.
-
-Lisa v9.14: The 2.0 Engine
-Go to app.py.
-
-Delete EVERYTHING.
-
-Paste this.
-
-Python
 import streamlit as st
 import requests
 import json
