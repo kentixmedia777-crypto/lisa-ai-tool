@@ -6,217 +6,131 @@ import time
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE MASTER BRAIN (YOUR FULL JSON) ---
+# --- THE MASTER BRAIN ---
 LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v9.1 Pro",
+    "version": "v9.2 Enterprise",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
-    "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
+    "specialization": "Hyper-realistic found footage style image generation.",
     "status": "ONLINE"
   },
   "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts for ALL named/significant characters. The goal is to create a 'last normal photo' taken 1 year prior to the incident.",
   "active_protocols": {
     "THE_RAFAEL_STANDARD": {
       "priority": "HIGHEST",
-      "visual_fidelity": "Images must look like throwaway smartphone snapshots, NOT digital art or 3D renders.",
-      "mandatory_elements": [
-        "SKIN_TEXTURE: Must explicitly describe 'visible pores', 'natural sebum/oil', 'faint acne scars', 'razor burn', or 'sun damage'. Skin must never look smooth or plastic.",
-        "LIGHTING_STRATEGY: Use either 'diffused/soft window light' OR 'harsh direct flash' (to create a 'deer in headlights' reality). AVOID 'studio lighting' to prevent the waxy 'AI look'.",
-        "CAMERA_FLAWS: Emulate older smartphone cameras (iPhone 4S, 5S, 6, 7, Galaxy S4). Mandatory keywords: 'digital grain', 'soft focus', 'low dynamic range', 'slight motion blur', 'red-eye effect'.",
-        "NO_FILTERS: The image must look raw and unedited."
-      ]
+      "visual_fidelity": "Images must look like throwaway smartphone snapshots.",
+      "mandatory_elements": ["visible pores", "natural sebum/oil", "faint acne scars", "razor burn", "harsh direct flash", "red-eye effect", "digital grain"]
     },
     "NORMAL_DAY_RULE": {
-      "description": "Replaces 'Off-The-Clock'. Mandates the setting must be domestic or leisure only.",
-      "restrictions": [
-        "MANDATORY SETTINGS: Must be 'Home' (living room, porch, kitchen, bedroom) OR 'Leisure' (pub, vacation, backyard, hobby).",
-        "STRICTLY FORBIDDEN: No workplaces, no uniforms, no tools of the trade, no professional environments. NO CRIME SCENES."
-      ]
-    },
-    "HAPPY_MASK_PROTOCOL": {
-      "description": "Enforces a 'Normal Day' vibe.",
-      "instruction": "All characters must display POSITIVE, RELAXED, or CONFIDENT expressions. NO sad/angry faces."
-    },
-    "ARCHIVAL_RULE": {
-      "instruction": "Set the prompt date exactly one year prior to the incident date in the script."
+      "restrictions": ["MANDATORY: Home or Leisure settings.", "FORBIDDEN: Workplaces, uniforms, crime scenes."]
     }
   },
   "response_format": {
     "prompt_delivery_method": "MANDATORY: Provide every prompt inside a Markdown code block (```markdown).",
-    "output_structure": [
-      "Cast Analysis",
-      "The Prompts"
-    ]
+    "output_structure": ["Cast Analysis", "The Prompts"]
   }
 }
 """
 
-# --- WEBSITE CONFIG & CSS STYLING ---
-st.set_page_config(page_title="LISA v9.1 - AI Visual Architect", page_icon="lz", layout="wide")
-
-# This is the "CSS Injection" to force the Facebook/Professional look
+# --- PROFESSIONAL STYLING (Facebook/Meta Style) ---
+st.set_page_config(page_title="LISA v9.2 - Enterprise", page_icon="lz", layout="wide")
 st.markdown("""
 <style>
-    /* GLOBAL BACKGROUND */
-    .stApp {
-        background-color: #f0f2f5;
-    }
-    
-    /* SIDEBAR STYLE */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #ddd;
-    }
-
-    /* HEADERS */
-    h1 {
-        color: #1877F2;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-weight: 800;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #e1e3e8;
-    }
-    h3 {
-        color: #4b4f56;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    }
-    
-    /* CARD STYLE FOR INPUTS */
-    .stTextArea, .stTextInput {
-        background-color: white;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    /* THE 'FACEBOOK BLUE' BUTTON */
-    .stButton>button {
-        background-color: #1877F2;
-        color: white;
-        border-radius: 8px;
-        font-weight: bold;
-        border: none;
-        padding: 12px 24px;
-        width: 100%;
-        transition: all 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .stButton>button:hover {
-        background-color: #166fe5;
-        box-shadow: 0 4px 8px rgba(24, 119, 242, 0.3);
-    }
-    
-    /* ALERT BOXES */
-    .stAlert {
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+    .stApp {background-color: #f0f2f5;}
+    [data-testid="stSidebar"] {background-color: #ffffff; border-right: 1px solid #ddd;}
+    h1 {color: #1877F2; font-family: 'Helvetica Neue', sans-serif; font-weight: 800;}
+    .stButton>button {background-color: #1877F2; color: white; border-radius: 8px; font-weight: bold; border: none; padding: 12px 24px; width: 100%; text-transform: uppercase; letter-spacing: 1px;}
+    .stButton>button:hover {background-color: #166fe5;}
+    .stTextArea, .stTextInput {background-color: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE GEMMA ENGINE ---
+# --- ENGINE ---
 def generate_content_raw(api_key, model_name, script):
-    clean_key = api_key.strip()
+    clean_key = api_key.strip() # <--- SAFETY CLEANER
     url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
     
-    final_instruction = f"""
-    You are Lisa. Adopt the following SYSTEM JSON strictly:
-    {LISA_JSON_PROMPT}
-    
-    Based on that persona, analyze this script and generate the prompts:
-    SCRIPT:
-    {script}
-    """
+    final_instruction = f"You are Lisa. Adopt the following SYSTEM JSON strictly:\n{LISA_JSON_PROMPT}\n\nSCRIPT:\n{script}"
     
     headers = {'Content-Type': 'application/json'}
-    data = {
-        "contents": [{
-            "parts": [{"text": final_instruction}]
-        }]
-    }
+    data = {"contents": [{"parts": [{"text": final_instruction}]}]}
     
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             result = response.json()
-            if 'candidates' in result and result['candidates']:
-                return result['candidates'][0]['content']['parts'][0]['text']
-            else:
-                return "ERROR: Empty Response."
-        else:
-            return f"ERROR {response.status_code}: {response.text}"
+            if 'candidates' in result: return result['candidates'][0]['content']['parts'][0]['text']
+            return "ERROR: Empty Response."
+        return f"ERROR {response.status_code}: {response.text}"
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT ---
-
-# Header Section
-st.title("LISA v9.1")
-st.markdown("### AI Visual Architect | Professional Edition")
+# --- MAIN APP ---
+st.title("LISA v9.2")
+st.markdown("### AI Visual Architect | Enterprise Edition")
 st.markdown("---")
 
-# Login Check
 password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
 
 if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
-    
-    # --- PRO SIDEBAR ---
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔑 API Configuration")
-    st.sidebar.info("Enter your Google API Key below to power the engine.")
-    user_api_key = st.sidebar.text_input("API Key", type="password", placeholder="Paste AIzaSy... here")
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Engine Status:** Ready")
-    st.sidebar.markdown("**Protocol:** Rafael Standard")
     
-    # --- MAIN WORKSPACE ---
+    # --- INTELLIGENT KEY CHECK ---
+    # 1. Check the Safe (Secrets) first
+    if "GOOGLE_API_KEY" in st.secrets:
+        # If found in secrets, USE IT and HIDE the box
+        final_api_key = st.secrets["GOOGLE_API_KEY"]
+        st.sidebar.success("✅ License Key Active")
+        st.sidebar.info("Authorized for: Lucalles Productions")
+    else:
+        # 2. Only show this box if Secrets is EMPTY (Fallback)
+        st.sidebar.warning("⚠️ No License Found")
+        final_api_key = st.sidebar.text_input("Manual Key Entry", type="password")
+    
+    st.sidebar.markdown("---")
+    
+    # --- WORKSPACE ---
     col1, col2 = st.columns([3, 1])
-    
     with col1:
         st.markdown("#### 🎬 Script Ingestion")
-        user_script = st.text_area("Paste the script for analysis:", height=300, placeholder="Paste true crime script here...")
-
+        user_script = st.text_area("Paste script:", height=300)
     with col2:
         st.markdown("#### 🚀 Controls")
-        st.write("") # Spacer
-        st.write("") # Spacer
+        st.write("")
+        st.write("")
         if st.button("Initialize Lisa"):
-            if not user_api_key:
-                st.error("⚠️ API Key Required in Sidebar")
+            if not final_api_key:
+                st.error("⚠️ System Halted: Missing API Key")
                 st.stop()
                 
             if user_script:
                 models = ["gemma-3-27b-it", "gemma-3-12b-it"]
                 success = False
-                
-                status_container = st.empty()
-                progress_bar = st.progress(0)
+                status = st.empty()
+                progress = st.progress(0)
                 
                 for i, model in enumerate(models):
-                    status_container.info(f"⚡ Connecting to Neural Engine: {model}...")
-                    progress_bar.progress((i + 1) * 50)
-                    
-                    result = generate_content_raw(user_api_key, model, user_script)
+                    status.info(f"⚡ Connecting to Neural Engine: {model}...")
+                    progress.progress((i + 1) * 50)
+                    result = generate_content_raw(final_api_key, model, user_script)
                     
                     if "ERROR" not in result:
                         st.markdown("---")
                         st.success(f"✅ Generation Complete via {model}")
-                        st.markdown("### 📸 Output Manifest:")
                         st.markdown(result)
                         success = True
-                        status_container.empty()
-                        progress_bar.empty()
+                        status.empty()
+                        progress.empty()
                         break
                     else:
-                        st.warning(f"⚠️ {model} unresponsive. Rerouting...")
+                        st.warning(f"⚠️ {model} unresponsive...")
                 
                 if not success:
-                    st.error("❌ System Failure: All engines unresponsive.")
+                    st.error("❌ System Failure.")
                     st.code(result)
             else:
                 st.warning("⚠️ Input Buffer Empty")
