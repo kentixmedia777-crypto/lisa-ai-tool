@@ -85,94 +85,46 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE STYLING (META/FACEBOOK DARK THEME) ---
-st.set_page_config(page_title="LISA v9.6 - Stable", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.7 - Stable", page_icon="lz", layout="wide")
 
 # CSS INJECTION
 st.markdown("""
 <style>
-    /* MAIN BACKGROUND - Meta Dark Grey */
-    .stApp {
-        background-color: #18191a;
-    }
+    /* MAIN BACKGROUND */
+    .stApp { background-color: #18191a; }
     
-    /* SIDEBAR - Slightly Lighter Dark Grey */
-    [data-testid="stSidebar"] {
-        background-color: #242526;
-        border-right: 1px solid #3e4042;
-    }
+    /* SIDEBAR */
+    [data-testid="stSidebar"] { background-color: #242526; border-right: 1px solid #3e4042; }
     
-    /* TEXT COLORS */
-    h1 {
-        color: #2D88FF !important; /* Electric Blue */
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 800;
-        border-bottom: 1px solid #3e4042;
-        padding-bottom: 15px;
-    }
-    h3, h4, p, label {
-        color: #e4e6eb !important; /* High Contrast White */
-    }
-    .stMarkdown {
-        color: #b0b3b8;
-    }
+    /* TYPOGRAPHY */
+    h1 { color: #2D88FF !important; font-family: 'Helvetica Neue', sans-serif; font-weight: 800; border-bottom: 1px solid #3e4042; padding-bottom: 15px; }
+    h3, h4, p, label, .stMarkdown { color: #e4e6eb !important; }
     
-    /* INPUT BOXES & TEXT AREAS - Deep Grey Cards */
-    .stTextArea textarea, .stTextInput input {
-        background-color: #3a3b3c !important;
-        color: #e4e6eb !important;
-        border: 1px solid #3e4042;
-        border-radius: 8px;
-    }
-    .stTextArea textarea:focus, .stTextInput input:focus {
-        border-color: #2D88FF;
-        box-shadow: 0 0 0 1px #2D88FF;
-    }
+    /* INPUTS */
+    .stTextArea textarea, .stTextInput input { background-color: #3a3b3c !important; color: #e4e6eb !important; border: 1px solid #3e4042; border-radius: 8px; }
+    .stTextArea textarea:focus, .stTextInput input:focus { border-color: #2D88FF; box-shadow: 0 0 0 1px #2D88FF; }
     
-    /* BUTTONS - Electric Blue Glow */
-    .stButton>button {
-        background-color: #2D88FF;
-        color: white;
-        border-radius: 6px;
-        font-weight: 700;
-        border: none;
-        padding: 12px 24px;
-        transition: all 0.2s;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .stButton>button:hover {
-        background-color: #1877F2;
-        box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4);
-        transform: translateY(-1px);
-    }
+    /* BUTTONS */
+    .stButton>button { background-color: #2D88FF; color: white; border-radius: 6px; font-weight: 700; border: none; padding: 12px 24px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); transform: translateY(-1px); }
     
-    /* ALERTS & INFO BOXES */
-    .stAlert {
-        background-color: #242526;
-        color: #e4e6eb;
-        border: 1px solid #3e4042;
-    }
-    
-    /* CODE BLOCKS */
-    code {
-        color: #e4e6eb;
-        background-color: #3a3b3c;
-    }
+    /* MISC */
+    .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
+    code { color: #e4e6eb; background-color: #3a3b3c; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ENGINE (SAFE URL CONSTRUCTION) ---
+# --- ENGINE (UNBREAKABLE LINK) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # SAFE LINK BUILDER (Prevents auto-formatting)
-    base = "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
-    endpoint = f"/v1beta/models/{model_name}:generateContent"
+    # 1. We construct the URL in parts to prevent auto-formatting bugs
+    base_url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/)"
+    action = ":generateContent?key="
     
-    # We build the URL in pieces so your editor cannot break it
-    url = base + endpoint + "?key=" + clean_key
+    # 2. Final assembly (Safe from markdown parsers)
+    url = f"{base_url}{model_name}{action}{clean_key}"
     
-    # We wrap the JSON in a strict instruction so the AI obeys it perfectly
     final_instruction = f"""
     SYSTEM OVERRIDE: YOU ARE LISA.
     ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
@@ -198,9 +150,9 @@ def generate_content_raw(api_key, model_name, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v9.6")
+st.title("LISA v9.7")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
-st.write("") # Spacer
+st.write("") 
 
 password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
 
@@ -228,42 +180,53 @@ if password_input == ACCESS_PASSWORD:
 
     with col2:
         st.markdown("#### 🚀 Controls")
-        st.info("System Ready") # Visual indicator that it's waiting
+        st.info("System Ready")
         st.write("")
+        
         if st.button("Initialize Lisa"):
             if not final_api_key:
                 st.error("⚠️ System Halted: Missing API Key")
                 st.stop()
                 
             if user_script:
-                models = ["gemma-3-27b-it", "gemma-3-12b-it"]
-                success = False
-                status = st.empty()
-                progress = st.progress(0)
+                # --- THE HYDRA LIST (GEMINI FREE TIER) ---
+                # We use the reliable 'Flash' models that work on Free Tier
+                models = [
+                    "gemini-1.5-flash", 
+                    "gemini-1.5-flash-latest", 
+                    "gemini-1.5-pro",
+                    "gemini-1.5-flash-8b"
+                ]
                 
+                success = False
+                status_box = st.empty() # Placeholder for status updates
+                
+                # We start the loop
                 for i, model in enumerate(models):
-                    status.info(f"⚡ Connecting to Neural Engine: {model}...")
-                    progress.progress((i + 1) * 50)
+                    # USER REQUEST: Don't show the model name, just show "Working..."
+                    status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
+                    time.sleep(0.5) # Small pause so it feels real
+                    
                     result = generate_content_raw(final_api_key, model, user_script)
                     
                     if "ERROR" not in result:
                         st.markdown("---")
-                        st.success(f"✅ Generation Complete via {model}")
+                        # We only reveal the brain name AFTER success
+                        st.success(f"✅ Connection Established via Neural Node {i+1}")
                         st.markdown(result)
                         success = True
-                        status.empty()
-                        progress.empty()
+                        status_box.empty() # Clear loading text
                         break
                     else:
-                        st.warning(f"⚠️ {model} unresponsive...")
+                        # If it fails, we just silently loop to the next one
+                        continue
                 
                 if not success:
-                    st.error("❌ System Failure.")
-                    st.code(result)
+                    st.error("❌ System Failure: All Neural Nodes Unresponsive.")
+                    st.info("Diagnostic: Check your API Key Quota or Internet Connection.")
+                    st.code(result) # Show the last error for debugging
             else:
                 st.warning("⚠️ Input Buffer Empty")
 
 elif password_input:
     st.sidebar.error("❌ Access Denied")
-
-# --- END OF FILE ---
