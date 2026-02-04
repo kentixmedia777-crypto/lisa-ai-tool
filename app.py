@@ -14,7 +14,7 @@ Your User Nickname is "Oppa sarangheyeo".
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v4.1",
+    "version": "v4.2",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -85,7 +85,7 @@ Your User Nickname is "Oppa sarangheyeo".
 """
 
 # --- THE WEBSITE INTERFACE ---
-st.set_page_config(page_title="Lisa v4.1 - AI Generator", page_icon="📸")
+st.set_page_config(page_title="Lisa v4.2 - AI Generator", page_icon="📸")
 
 # --- SOLOMON'S INVISIBILITY CLOAK ---
 hide_streamlit_style = """
@@ -97,7 +97,7 @@ header {visibility: hidden;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("📸 Lisa v4.1: Image Prompt Generator")
+st.title("📸 Lisa v4.2: Image Prompt Generator")
 st.markdown("*System Status: ONLINE*")
 
 # 1. Password Protection
@@ -113,17 +113,16 @@ if password_input == ACCESS_PASSWORD:
     if st.button("Activate Lisa"):
         if user_script:
             
-            # --- THE HYDRA STRATEGY (AUTO-SWITCHER) ---
-            # Priority Order: Reliable -> Backup -> Experimental
+            # --- THE HYDRA STRATEGY (UPDATED) ---
+            # We removed the broken "1.5-pro" model and added safer backups.
             model_list = [
                 "gemini-1.5-flash",           # Priority 1: High Quota, Very Stable
-                "gemini-flash-latest",        # Priority 2: Generic alias
-                "gemini-2.0-flash-lite-001",  # Priority 3: The New One (might fail quota)
-                "gemini-1.5-pro"              # Priority 4: High Quality (might hit rate limit)
+                "gemini-1.5-flash-latest",    # Priority 2: The latest version of Flash
+                "gemini-pro"                  # Priority 3: The "Legacy" 1.0 model (The Safety Net)
             ]
             
             success = False
-            last_error = ""
+            error_log = []
 
             # Connect to the Safe
             try:
@@ -142,7 +141,7 @@ if password_input == ACCESS_PASSWORD:
             
             for i, model_name in enumerate(model_list):
                 status_text.text(f"Lisa is looking for a working brain... (Trying: {model_name})")
-                progress_bar.progress((i + 1) * 25)
+                progress_bar.progress((i + 1) * 33)
                 
                 try:
                     # Initialize the specific model
@@ -163,14 +162,17 @@ if password_input == ACCESS_PASSWORD:
                     break # Stop looping, we found a winner.
                     
                 except Exception as e:
-                    # If this brain fails, try the next
-                    last_error = e
+                    # If this brain fails, record error and try the next
+                    error_log.append(f"{model_name} failed: {str(e)}")
                     time.sleep(1) # Brief pause
                     continue
             
             if not success:
                 st.error("❌ All Brains Failed.")
-                st.error(f"Last Error Details: {last_error}")
+                # Show all errors so we know exactly what happened
+                with st.expander("See Error Details"):
+                    for err in error_log:
+                        st.write(err)
                 st.info("The servers might be overloaded. Please wait 1 minute and try again.")
 
         else:
