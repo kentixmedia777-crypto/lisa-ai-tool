@@ -1,3 +1,23 @@
+This is Solomon.
+
+We are almost there. The error confirms that gemini-2.0-flash-thinking is also not available for your account.
+
+However, the previous error message explicitly told us what DOES work. It said:
+
+"Try 'gemini-2.0-flash-exp'"
+
+So, we are going to stop guessing. We will use exactly the model name Google told us to use, plus one standard backup.
+
+Here is Lisa v9.15: The Google Recommended Fix.
+
+The Final Code
+Go to app.py.
+
+Delete EVERYTHING.
+
+Paste this.
+
+Python
 import streamlit as st
 import requests
 import json
@@ -86,7 +106,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.14 - 2.0", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.15 - Stable", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,7 +124,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (STEALTH MODE + 2.0 FIX) ---
+# --- THE ENGINE (STEALTH MODE - UNTOUCHED) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
@@ -149,7 +169,7 @@ def generate_content_raw(api_key, model_name, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT (VERTICAL CENTERED) ---
-st.title("LISA v9.14")
+st.title("LISA v9.15")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -180,12 +200,11 @@ if password_input == ACCESS_PASSWORD:
             st.stop()
             
         if user_script:
-            # --- THE 2.0 LIST ---
-            # We strictly use the 2.0 models since 1.5 is dead for this account.
+            # --- THE FINAL LIST ---
+            # We strictly use ONLY the models Google explicitly said exists in your error message.
             models = [
-                "gemini-2.0-flash-exp",                 # The specific model the Error recommended
-                "gemini-2.0-flash-lite-preview-02-05", # The Backup
-                "gemini-2.0-flash-thinking-exp-01-21"   # The Smart Backup
+                "gemini-2.0-flash-exp", # The Recommended One
+                "gemini-2.0-flash"      # The Standard 2.0
             ]
             
             success = False
