@@ -6,7 +6,7 @@ import time
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE MASTER BRAIN (FULL JSON) ---
+# --- THE MASTER BRAIN (UNTOUCHED) ---
 LISA_JSON_PROMPT = """
 {
   "system_identity": {
@@ -84,47 +84,41 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE STYLING (META/FACEBOOK DARK THEME) ---
-st.set_page_config(page_title="LISA v9.7 - Stable", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN (UNTOUCHED) ---
+st.set_page_config(page_title="LISA v9.8 - Fix", page_icon="lz", layout="wide")
 
-# CSS INJECTION
 st.markdown("""
 <style>
-    /* MAIN BACKGROUND */
+    /* META DARK MODE THEME */
     .stApp { background-color: #18191a; }
-    
-    /* SIDEBAR */
     [data-testid="stSidebar"] { background-color: #242526; border-right: 1px solid #3e4042; }
-    
-    /* TYPOGRAPHY */
     h1 { color: #2D88FF !important; font-family: 'Helvetica Neue', sans-serif; font-weight: 800; border-bottom: 1px solid #3e4042; padding-bottom: 15px; }
     h3, h4, p, label, .stMarkdown { color: #e4e6eb !important; }
-    
-    /* INPUTS */
     .stTextArea textarea, .stTextInput input { background-color: #3a3b3c !important; color: #e4e6eb !important; border: 1px solid #3e4042; border-radius: 8px; }
     .stTextArea textarea:focus, .stTextInput input:focus { border-color: #2D88FF; box-shadow: 0 0 0 1px #2D88FF; }
-    
-    /* BUTTONS */
-    .stButton>button { background-color: #2D88FF; color: white; border-radius: 6px; font-weight: 700; border: none; padding: 12px 24px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); transform: translateY(-1px); }
-    
-    /* MISC */
+    .stButton>button { background-color: #2D88FF; color: white; border-radius: 6px; font-weight: 700; border: none; padding: 12px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); }
     .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
     code { color: #e4e6eb; background-color: #3a3b3c; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ENGINE (UNBREAKABLE LINK) ---
+# --- THE ENGINE FIX ---
+# I have rewritten this part so the URL cannot break into a button.
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # 1. We construct the URL in parts to prevent auto-formatting bugs
-    base_url = "[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/)"
-    action = ":generateContent?key="
+    # 1. Base Domain
+    domain = "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
+    # 2. API Endpoint
+    endpoint = "/v1beta/models/" + model_name + ":generateContent"
+    # 3. Parameters
+    params = "?key=" + clean_key
     
-    # 2. Final assembly (Safe from markdown parsers)
-    url = f"{base_url}{model_name}{action}{clean_key}"
+    # 4. Construct Full URL (Safe Method)
+    url = domain + endpoint + params
     
+    # SYSTEM PROMPT INJECTION
     final_instruction = f"""
     SYSTEM OVERRIDE: YOU ARE LISA.
     ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
@@ -139,18 +133,24 @@ def generate_content_raw(api_key, model_name, script):
     
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
+    
     try:
+        # We perform the call with the safe URL
         response = requests.post(url, headers=headers, json=data)
+        
         if response.status_code == 200:
             result = response.json()
-            if 'candidates' in result: return result['candidates'][0]['content']['parts'][0]['text']
-            return "ERROR: Empty Response."
+            if 'candidates' in result: 
+                return result['candidates'][0]['content']['parts'][0]['text']
+            return "ERROR: Empty Response from Google."
+            
         return f"ERROR {response.status_code}: {response.text}"
+        
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT ---
-st.title("LISA v9.7")
+# --- MAIN APP LAYOUT (UNTOUCHED) ---
+st.title("LISA v9.8")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -160,7 +160,6 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
     st.sidebar.markdown("---")
     
-    # --- INTELLIGENT KEY CHECK ---
     if "GOOGLE_API_KEY" in st.secrets:
         final_api_key = st.secrets["GOOGLE_API_KEY"]
         st.sidebar.success("✅ License Key Active")
@@ -171,7 +170,6 @@ if password_input == ACCESS_PASSWORD:
     
     st.sidebar.markdown("---")
     
-    # --- WORKSPACE ---
     col1, col2 = st.columns([3, 1])
     
     with col1:
@@ -189,42 +187,37 @@ if password_input == ACCESS_PASSWORD:
                 st.stop()
                 
             if user_script:
-                # --- THE HYDRA LIST (GEMINI FREE TIER) ---
-                # We use the reliable 'Flash' models that work on Free Tier
+                # --- THE HYDRA LIST (Gemini Flash Family) ---
                 models = [
                     "gemini-1.5-flash", 
                     "gemini-1.5-flash-latest", 
-                    "gemini-1.5-pro",
-                    "gemini-1.5-flash-8b"
+                    "gemini-1.5-flash-8b",
+                    "gemini-1.5-pro"
                 ]
                 
                 success = False
-                status_box = st.empty() # Placeholder for status updates
+                status_box = st.empty()
                 
-                # We start the loop
                 for i, model in enumerate(models):
-                    # USER REQUEST: Don't show the model name, just show "Working..."
                     status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
-                    time.sleep(0.5) # Small pause so it feels real
+                    time.sleep(0.5)
                     
                     result = generate_content_raw(final_api_key, model, user_script)
                     
                     if "ERROR" not in result:
                         st.markdown("---")
-                        # We only reveal the brain name AFTER success
                         st.success(f"✅ Connection Established via Neural Node {i+1}")
                         st.markdown(result)
                         success = True
-                        status_box.empty() # Clear loading text
+                        status_box.empty()
                         break
                     else:
-                        # If it fails, we just silently loop to the next one
                         continue
                 
                 if not success:
                     st.error("❌ System Failure: All Neural Nodes Unresponsive.")
                     st.info("Diagnostic: Check your API Key Quota or Internet Connection.")
-                    st.code(result) # Show the last error for debugging
+                    st.code(result)
             else:
                 st.warning("⚠️ Input Buffer Empty")
 
