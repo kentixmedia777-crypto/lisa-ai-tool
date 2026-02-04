@@ -15,16 +15,13 @@ Your User Nickname is "Oppa sarangheyeo".
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v5.1 (Stable Edition)",
+    "version": "v6.0 (Survival Mode)",
     "status": "ONLINE"
   },
   "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts.",
   "active_protocols": {
     "THE_RAFAEL_STANDARD": {
       "mandatory_elements": ["visible pores", "natural sebum/oil", "faint acne scars", "razor burn", "harsh direct flash", "red-eye effect", "digital grain"]
-    },
-    "NORMAL_DAY_RULE": {
-      "restrictions": ["MANDATORY: Home or Leisure settings.", "FORBIDDEN: Workplaces, uniforms, crime scenes."]
     }
   },
   "response_format": {
@@ -34,12 +31,14 @@ Your User Nickname is "Oppa sarangheyeo".
 """
 
 # --- WEBSITE CONFIG ---
-st.set_page_config(page_title="Lisa v5.1 - Stable", page_icon="📸")
-st.title("📸 Lisa v5.1: Stable Edition")
+st.set_page_config(page_title="Lisa v6.0 - Survival", page_icon="📸")
+st.title("📸 Lisa v6.0: Survival Mode")
 
 # --- THE ENGINE ---
 def generate_content_raw(api_key, model_name, script):
-    # We use the "Stable Aliases" found in your list (Item #16 and #18)
+    # Toggle between v1beta and v1 based on the model to find a working door
+    version = "v1beta" 
+    
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
@@ -54,7 +53,11 @@ def generate_content_raw(api_key, model_name, script):
         
         if response.status_code == 200:
             result = response.json()
-            return result['candidates'][0]['content']['parts'][0]['text']
+            # Handle different response structures for Gemma vs Gemini
+            if 'candidates' in result and result['candidates']:
+                return result['candidates'][0]['content']['parts'][0]['text']
+            else:
+                return f"ERROR: Empty Response. {result}"
         else:
             return f"ERROR {response.status_code}: {response.text}"
             
@@ -79,20 +82,23 @@ if password_input == ACCESS_PASSWORD:
                 st.error("❌ API Key Missing in Secrets")
                 st.stop()
 
-            # --- THE STABLE LIST ---
-            # These are aliases that point to the working versions
+            # --- THE SURVIVAL LIST ---
+            # 1. gemini-flash-latest: The generic pointer (Might work)
+            # 2. gemini-2.0-flash-001: The specific stable version (Might work)
+            # 3. gemma-3-27b-it: The Open Model (Backup)
             models = [
-                "gemini-flash-latest",    # Priority 1: High Speed, High Quota
-                "gemini-pro-latest",      # Priority 2: High Intelligence
-                "gemini-1.5-flash"        # Priority 3: Old Reliable
+                "gemini-flash-latest",
+                "gemini-2.0-flash-001",
+                "gemma-3-27b-it"
             ]
             
             success = False
             progress = st.progress(0)
             status = st.empty()
+            error_log = []
             
             for i, model in enumerate(models):
-                status.text(f"Lisa is connecting to {model}...")
+                status.text(f"Attempting connection to Brain: {model}...")
                 progress.progress((i + 1) * 30)
                 
                 result = generate_content_raw(api_key, model, user_script)
@@ -104,14 +110,18 @@ if password_input == ACCESS_PASSWORD:
                     success = True
                     break
                 else:
-                    # If it fails, we wait 2 seconds before trying the next one
-                    # to avoid hitting the speed limit again.
-                    st.warning(f"⚠️ {model} failed or is busy. Switching...")
-                    time.sleep(2)
+                    # Capture the SPECIFIC error to show you
+                    clean_error = result.replace('"', '')[:200] + "..." # Shorten it
+                    error_msg = f"⚠️ {model} Failed: {clean_error}"
+                    error_log.append(error_msg)
+                    st.warning(error_msg)
+                    time.sleep(1)
             
             if not success:
                 st.error("❌ All Brains Failed.")
-                st.write(result) 
+                with st.expander("🔍 READ THIS ERROR LOG TO SOLOMON"):
+                    for err in error_log:
+                        st.write(err)
                 
         else:
             st.warning("Paste a script first.")
