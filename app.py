@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.11 - Centered", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.13 - Eco", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,7 +104,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (STEALTH MODE - UNTOUCHED) ---
+# --- THE ENGINE (SINGLE MODEL TO SAVE QUOTA) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
@@ -148,8 +148,8 @@ def generate_content_raw(api_key, model_name, script):
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT (FIXED: CENTERED STACK) ---
-st.title("LISA v9.11")
+# --- MAIN APP LAYOUT (VERTICAL CENTERED) ---
+st.title("LISA v9.13")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -169,8 +169,6 @@ if password_input == ACCESS_PASSWORD:
     
     st.sidebar.markdown("---")
     
-    # --- LAYOUT CHANGE: VERTICAL STACK (NO COLUMNS) ---
-    
     st.markdown("#### 🎬 Script Ingestion")
     user_script = st.text_area("Input Stream", height=300, placeholder="Paste your true crime script here...", label_visibility="collapsed")
     
@@ -182,41 +180,29 @@ if password_input == ACCESS_PASSWORD:
             st.stop()
             
         if user_script:
-            # --- THE HYDRA LIST (Gemini 2.0 Lite + Backup) ---
-            models = [
-                "gemini-2.0-flash-lite-preview-02-05", 
-                "gemini-2.0-flash-lite",               
-                "gemini-flash-latest",                 
-                "gemini-1.5-flash-latest"              
-            ]
+            # --- THE ECO MODE ---
+            # We use ONLY ONE model to save your quota.
+            # This is the most stable free model: 'gemini-1.5-flash'
+            model = "gemini-1.5-flash"
             
-            success = False
-            status_box = st.empty()
-            
-            for i, model in enumerate(models):
-                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
-                time.sleep(0.5)
-                
+            with st.spinner("🔄 Lisa is generating visual architecture..."):
+                time.sleep(1) # Artificial delay to be gentle on the API
                 result = generate_content_raw(final_api_key, model, user_script)
                 
                 if "ERROR" not in result:
                     st.markdown("---")
-                    st.success(f"✅ Connection Established via Neural Node {i+1}")
+                    st.success(f"✅ Connection Established via {model}")
                     
-                    # RESULTS DISPLAY (Full Width now)
+                    # RESULTS DISPLAY
                     st.markdown("### 📸 Visual Analysis & Prompts")
                     st.markdown(result)
-                    
-                    success = True
-                    status_box.empty()
-                    break
                 else:
-                    continue
-            
-            if not success:
-                st.error("❌ System Failure: All Neural Nodes Unresponsive.")
-                st.info("Diagnostic: Your API Key is valid, but Google's Free Quota is full for all models right now. Please wait 1 hour.")
-                st.code(result)
+                    st.error("❌ System Failure.")
+                    if "429" in result:
+                        st.info("ℹ️ QUOTA EXCEEDED: You have hit the Google Free Tier limit. You must wait 10-60 minutes or use a new API Key.")
+                    elif "404" in result:
+                        st.info("ℹ️ MODEL ERROR: This Google account does not have access to 1.5-Flash. Try 'gemini-2.0-flash-exp'.")
+                    st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
 
