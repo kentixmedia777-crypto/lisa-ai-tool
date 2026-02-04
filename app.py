@@ -1,30 +1,12 @@
 import streamlit as st
-import subprocess
-import sys
-
-# --- FORCE UPGRADE (THE NUCLEAR FIX) ---
-# This forces the server to download the new Brain Software immediately.
-try:
-    import google.generativeai as genai
-    # Check if the version is old. If it is, force upgrade.
-    version = genai.__version__
-    if version < "0.7.0":
-        st.warning(f"⚠️ Old Brain Software detected (v{version}). Upgrading now... please wait 10 seconds...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "google-generativeai"])
-        st.success("✅ Upgrade Complete! Please refresh the page.")
-        st.stop()
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
-    st.experimental_rerun()
-
-# --- NOW IMPORT THE FRESH LIBRARY ---
-import google.generativeai as genai
+import requests
+import json
 import time
 
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE SYSTEM PROMPT ---
+# --- SYSTEM PROMPT ---
 LISA_SYSTEM_PROMPT = """
 You are Lisa, an AI Image Prompt Generator Assistant.
 Your User Nickname is "Oppa sarangheyeo".
@@ -33,20 +15,16 @@ Your User Nickname is "Oppa sarangheyeo".
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v4.3",
+    "version": "v4.4 (Bare Metal)",
     "status": "ONLINE"
   },
-  "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts. Goal: 'last normal photo' taken 1 year prior to incident.",
+  "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts.",
   "active_protocols": {
     "THE_RAFAEL_STANDARD": {
-      "visual_fidelity": "Throwaway smartphone snapshots. NO digital art.",
-      "mandatory_elements": ["visible pores", "natural sebum/oil", "faint acne scars", "razor burn", "harsh direct flash", "red-eye effect", "digital grain", "low dynamic range"]
+      "mandatory_elements": ["visible pores", "natural sebum/oil", "faint acne scars", "razor burn", "harsh direct flash", "red-eye effect", "digital grain"]
     },
     "NORMAL_DAY_RULE": {
       "restrictions": ["MANDATORY: Home or Leisure settings.", "FORBIDDEN: Workplaces, uniforms, crime scenes."]
-    },
-    "HAPPY_MASK_PROTOCOL": {
-      "instruction": "All characters must display POSITIVE expressions (smiling, laughing). NO sad/angry faces."
     }
   },
   "response_format": {
@@ -55,81 +33,84 @@ Your User Nickname is "Oppa sarangheyeo".
 }
 """
 
-# --- THE WEBSITE INTERFACE ---
-st.set_page_config(page_title="Lisa v4.3 - AI Generator", page_icon="📸")
+# --- WEBSITE CONFIG ---
+st.set_page_config(page_title="Lisa v4.4 - Bare Metal", page_icon="📸")
+st.title("📸 Lisa v4.4: Bare Metal Edition")
 
-st.title("📸 Lisa v4.3: Image Prompt Generator")
+# --- THE RAW ENGINE (NO LIBRARY REQUIRED) ---
+def generate_content_raw(api_key, model_name, script):
+    # This URL talks directly to Google, bypassing the broken python library
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "contents": [{
+            "parts": [{"text": f"{LISA_SYSTEM_PROMPT}\n\nSCRIPT:\n{script}"}]
+        }]
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        
+        # Check if Google accepted the call
+        if response.status_code == 200:
+            result = response.json()
+            # Extract the text from the complex JSON response
+            return result['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"ERROR {response.status_code}: {response.text}"
+            
+    except Exception as e:
+        return f"CRITICAL CONNECTION ERROR: {str(e)}"
 
-# 1. Password Protection
+# --- MAIN APP ---
 password_input = st.sidebar.text_input("Enter Access Password", type="password")
 
 if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ Access Granted")
     
-    # 2. Input Area
     st.write("### Paste the Script Below:")
-    user_script = st.text_area("Script Input", height=300, placeholder="Paste the true crime script here...")
+    user_script = st.text_area("Script Input", height=300)
     
     if st.button("Activate Lisa"):
         if user_script:
             
-            # --- THE HYDRA STRATEGY ---
-            model_list = [
-                "gemini-1.5-flash",
-                "gemini-1.5-flash-latest",
-                "gemini-pro"
-            ]
-            
-            success = False
-            error_log = []
-
-            try:
-                if "GOOGLE_API_KEY" in st.secrets:
-                    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-                else:
-                    st.error("❌ Key Error: Secret 'GOOGLE_API_KEY' not found.")
-                    st.stop()
-            except Exception as e:
-                st.error(f"Configuration Error: {e}")
+            # Retrieve API Key
+            if "GOOGLE_API_KEY" in st.secrets:
+                api_key = st.secrets["GOOGLE_API_KEY"]
+            else:
+                st.error("❌ API Key Missing in Secrets")
                 st.stop()
 
-            # Start the Search for a Brain
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+            # --- THE HYDRA LOOP (BARE METAL) ---
+            models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"]
+            success = False
             
-            for i, model_name in enumerate(model_list):
-                status_text.text(f"Lisa is looking for a working brain... (Trying: {model_name})")
-                progress_bar.progress((i + 1) * 33)
+            progress = st.progress(0)
+            status = st.empty()
+            
+            for i, model in enumerate(models):
+                status.text(f"Lisa is calling Google directly... (Brain: {model})")
+                progress.progress((i + 1) * 30)
                 
-                try:
-                    model = genai.GenerativeModel(model_name)
-                    full_prompt = f"{LISA_SYSTEM_PROMPT}\n\nScript:\n{user_script}"
-                    response = model.generate_content(full_prompt)
-                    
+                result = generate_content_raw(api_key, model, user_script)
+                
+                if "ERROR" not in result:
                     st.divider()
-                    st.success(f"✅ Success! Connected to Brain: {model_name}")
-                    st.write("### 📸 Lisa's Output:")
-                    st.markdown(response.text)
+                    st.success(f"✅ Connected to {model}")
+                    st.markdown(result)
                     success = True
-                    progress_bar.progress(100)
-                    status_text.text("Done.")
                     break
-                    
-                except Exception as e:
-                    error_log.append(f"{model_name} failed: {str(e)}")
+                else:
+                    st.warning(f"⚠️ {model} failed. Switching brain...")
                     time.sleep(1)
-                    continue
             
             if not success:
-                st.error("❌ All Brains Failed.")
-                with st.expander("See Error Details"):
-                    for err in error_log:
-                        st.write(err)
-
+                st.error("❌ Connection failed on all channels.")
+                st.write(result) # Show the last error message
+                
         else:
-            st.warning("Please paste a script first.")
-            
+            st.warning("Paste a script first.")
+
 elif password_input:
-    st.sidebar.error("❌ Access Denied.")
-else:
-    st.info("Please enter the password.")
+    st.sidebar.error("❌ Wrong Password.")
