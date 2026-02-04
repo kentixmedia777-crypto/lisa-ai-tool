@@ -11,7 +11,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v4.1",
+    "version": "v9.1 Pro",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -54,18 +54,75 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- WEBSITE CONFIG ---
-st.set_page_config(page_title="Lisa v8.1 - Clean", page_icon="📸")
-st.title("📸 Lisa v8.1: Clean Connect")
+# --- WEBSITE CONFIG & CSS STYLING ---
+st.set_page_config(page_title="LISA v9.1 - AI Visual Architect", page_icon="lz", layout="wide")
 
-# --- THE GEMMA ENGINE (WITH CLEANING) ---
-def generate_content_raw(api_key, model_name, script):
-    # CRITICAL FIX: We strip the key to remove invisible "ghost spaces"
-    clean_key = api_key.strip() 
+# This is the "CSS Injection" to force the Facebook/Professional look
+st.markdown("""
+<style>
+    /* GLOBAL BACKGROUND */
+    .stApp {
+        background-color: #f0f2f5;
+    }
     
+    /* SIDEBAR STYLE */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #ddd;
+    }
+
+    /* HEADERS */
+    h1 {
+        color: #1877F2;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-weight: 800;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e1e3e8;
+    }
+    h3 {
+        color: #4b4f56;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    
+    /* CARD STYLE FOR INPUTS */
+    .stTextArea, .stTextInput {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* THE 'FACEBOOK BLUE' BUTTON */
+    .stButton>button {
+        background-color: #1877F2;
+        color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        border: none;
+        padding: 12px 24px;
+        width: 100%;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .stButton>button:hover {
+        background-color: #166fe5;
+        box-shadow: 0 4px 8px rgba(24, 119, 242, 0.3);
+    }
+    
+    /* ALERT BOXES */
+    .stAlert {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- THE GEMMA ENGINE ---
+def generate_content_raw(api_key, model_name, script):
+    clean_key = api_key.strip()
     url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
     
-    # We wrap your JSON in a clear instruction so Gemma understands it
     final_instruction = f"""
     You are Lisa. Adopt the following SYSTEM JSON strictly:
     {LISA_JSON_PROMPT}
@@ -95,49 +152,74 @@ def generate_content_raw(api_key, model_name, script):
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP ---
-password_input = st.sidebar.text_input("Enter Access Password", type="password")
+# --- MAIN APP LAYOUT ---
+
+# Header Section
+st.title("LISA v9.1")
+st.markdown("### AI Visual Architect | Professional Edition")
+st.markdown("---")
+
+# Login Check
+password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
 
 if password_input == ACCESS_PASSWORD:
-    st.sidebar.success("✅ Access Granted")
+    st.sidebar.success("✅ SYSTEM ONLINE")
     
-    st.write("### Paste the Script Below:")
-    user_script = st.text_area("Script Input", height=300)
+    # --- PRO SIDEBAR ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔑 API Configuration")
+    st.sidebar.info("Enter your Google API Key below to power the engine.")
+    user_api_key = st.sidebar.text_input("API Key", type="password", placeholder="Paste AIzaSy... here")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Engine Status:** Ready")
+    st.sidebar.markdown("**Protocol:** Rafael Standard")
     
-    if st.button("Activate Lisa"):
-        if user_script:
-            if "GOOGLE_API_KEY" in st.secrets:
-                api_key = st.secrets["GOOGLE_API_KEY"]
-            else:
-                st.error("❌ Key Missing.")
-                st.stop()
+    # --- MAIN WORKSPACE ---
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.markdown("#### 🎬 Script Ingestion")
+        user_script = st.text_area("Paste the script for analysis:", height=300, placeholder="Paste true crime script here...")
 
-            # --- THE WORKING ENGINE (GEMMA) ---
-            models = ["gemma-3-27b-it", "gemma-3-12b-it"]
-            
-            success = False
-            progress = st.progress(0)
-            status = st.empty()
-            
-            for i, model in enumerate(models):
-                status.text(f"Connecting to {model}...")
-                progress.progress((i + 1) * 50)
+    with col2:
+        st.markdown("#### 🚀 Controls")
+        st.write("") # Spacer
+        st.write("") # Spacer
+        if st.button("Initialize Lisa"):
+            if not user_api_key:
+                st.error("⚠️ API Key Required in Sidebar")
+                st.stop()
                 
-                result = generate_content_raw(api_key, model, user_script)
+            if user_script:
+                models = ["gemma-3-27b-it", "gemma-3-12b-it"]
+                success = False
                 
-                if "ERROR" not in result:
-                    st.divider()
-                    st.success(f"✅ Success! Generated by {model}")
-                    st.markdown(result)
-                    success = True
-                    break
-                else:
-                    st.warning(f"⚠️ {model} failed. Trying next...")
-            
-            if not success:
-                st.error("❌ All Brains Failed.")
-                st.write(result)
-        else:
-            st.warning("Paste a script first.")
+                status_container = st.empty()
+                progress_bar = st.progress(0)
+                
+                for i, model in enumerate(models):
+                    status_container.info(f"⚡ Connecting to Neural Engine: {model}...")
+                    progress_bar.progress((i + 1) * 50)
+                    
+                    result = generate_content_raw(user_api_key, model, user_script)
+                    
+                    if "ERROR" not in result:
+                        st.markdown("---")
+                        st.success(f"✅ Generation Complete via {model}")
+                        st.markdown("### 📸 Output Manifest:")
+                        st.markdown(result)
+                        success = True
+                        status_container.empty()
+                        progress_bar.empty()
+                        break
+                    else:
+                        st.warning(f"⚠️ {model} unresponsive. Rerouting...")
+                
+                if not success:
+                    st.error("❌ System Failure: All engines unresponsive.")
+                    st.code(result)
+            else:
+                st.warning("⚠️ Input Buffer Empty")
+
 elif password_input:
-    st.sidebar.error("❌ Wrong Password.")
+    st.sidebar.error("❌ Access Denied")
