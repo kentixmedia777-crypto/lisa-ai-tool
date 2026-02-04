@@ -11,7 +11,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.0",
+    "version": "v10.1",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -84,8 +84,8 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v10 - Speedster", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN (RESTORED EXACTLY) ---
+st.set_page_config(page_title="LISA v10.1", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -100,10 +100,22 @@ st.markdown("""
     .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); }
     .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
     code { color: #e4e6eb; background-color: #3a3b3c; }
+    
+    /* SUCCESS BADGES (RESTORING THE GREEN/BLUE LOOK) */
+    .stSuccess {
+        background-color: #2e7d32 !important; /* Professional Green */
+        color: white !important;
+        border: none;
+    }
+    .stInfo {
+        background-color: #1565c0 !important; /* Professional Blue */
+        color: white !important;
+        border: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (FAST MODE: gemini-2.0-flash) ---
+# --- THE ENGINE (FAST MODE) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
@@ -143,7 +155,7 @@ def generate_content_raw(api_key, model_name, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10")
+st.title("LISA v10.1")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -153,21 +165,17 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
     st.sidebar.markdown("---")
     
-    # --- MANUAL KEY ENTRY FOR THE NEW KEY ---
-    # We prioritize the manual box now so you can paste your NEW key
-    st.sidebar.info("🔑 INPUT NEW KEY HERE")
-    manual_api_key = st.sidebar.text_input("License Key", type="password")
-    
-    # Fallback to secrets if manual is empty
-    if manual_api_key:
-        final_api_key = manual_api_key
-        st.sidebar.success("✅ Custom Key Active")
-    elif "GOOGLE_API_KEY" in st.secrets:
+    # --- VISUAL RESTORATION: THE ORIGINAL LOOK ---
+    # We grab the key from secrets silently. 
+    # If you have a new key, update it in your Streamlit Secrets settings, NOT here in the UI.
+    if "GOOGLE_API_KEY" in st.secrets:
         final_api_key = st.secrets["GOOGLE_API_KEY"]
-        st.sidebar.warning("⚠️ Using Old Secret Key")
+        st.sidebar.success("✅ License Key Active")
+        st.sidebar.info("Authorized for: Lucalles Productions")
     else:
-        final_api_key = None
-        st.sidebar.error("❌ No Key Found")
+        st.sidebar.warning("⚠️ No License Found")
+        # Hidden fallback only if secrets fail completely
+        final_api_key = st.sidebar.text_input("Manual Key Entry", type="password")
 
     st.sidebar.markdown("---")
     
@@ -184,7 +192,7 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE SPEEDSTER ---
-            # We use the verified FAST model from your scan.
+            # Using the rocket-fast 2.0-flash we confirmed works.
             model = "gemini-2.0-flash" 
             
             with st.spinner(f"🚀 Lisa is executing via {model}..."):
@@ -197,6 +205,8 @@ if password_input == ACCESS_PASSWORD:
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
+                    if "429" in result:
+                        st.info("ℹ️ QUOTA: The speed limit was hit. Please wait 1 minute.")
                     st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
