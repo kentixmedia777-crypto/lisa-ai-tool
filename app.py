@@ -6,7 +6,7 @@ import time
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE MASTER BRAIN (FULL UNEDITED JSON) ---
+# --- THE MASTER BRAIN (FULL JSON) ---
 LISA_JSON_PROMPT = """
 {
   "system_identity": {
@@ -85,7 +85,9 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE STYLING (META/FACEBOOK DARK THEME) ---
-st.set_page_config(page_title="LISA v9.4 - Complete", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.5 - Complete", page_icon="lz", layout="wide")
+
+# CSS INJECTION
 st.markdown("""
 <style>
     /* MAIN BACKGROUND - Meta Dark Grey */
@@ -96,4 +98,166 @@ st.markdown("""
     /* SIDEBAR - Slightly Lighter Dark Grey */
     [data-testid="stSidebar"] {
         background-color: #242526;
-        border-right: 1px solid #3
+        border-right: 1px solid #3e4042;
+    }
+    
+    /* TEXT COLORS */
+    h1 {
+        color: #2D88FF !important; /* Electric Blue */
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: 800;
+        border-bottom: 1px solid #3e4042;
+        padding-bottom: 15px;
+    }
+    h3, h4, p, label {
+        color: #e4e6eb !important; /* High Contrast White */
+    }
+    .stMarkdown {
+        color: #b0b3b8;
+    }
+    
+    /* INPUT BOXES & TEXT AREAS - Deep Grey Cards */
+    .stTextArea textarea, .stTextInput input {
+        background-color: #3a3b3c !important;
+        color: #e4e6eb !important;
+        border: 1px solid #3e4042;
+        border-radius: 8px;
+    }
+    .stTextArea textarea:focus, .stTextInput input:focus {
+        border-color: #2D88FF;
+        box-shadow: 0 0 0 1px #2D88FF;
+    }
+    
+    /* BUTTONS - Electric Blue Glow */
+    .stButton>button {
+        background-color: #2D88FF;
+        color: white;
+        border-radius: 6px;
+        font-weight: 700;
+        border: none;
+        padding: 12px 24px;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stButton>button:hover {
+        background-color: #1877F2;
+        box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* ALERTS & INFO BOXES */
+    .stAlert {
+        background-color: #242526;
+        color: #e4e6eb;
+        border: 1px solid #3e4042;
+    }
+    
+    /* CODE BLOCKS */
+    code {
+        color: #e4e6eb;
+        background-color: #3a3b3c;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- ENGINE ---
+def generate_content_raw(api_key, model_name, script):
+    clean_key = api_key.strip()
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
+    
+    # We wrap the JSON in a strict instruction so the AI obeys it perfectly
+    final_instruction = f"""
+    SYSTEM OVERRIDE: YOU ARE LISA.
+    ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
+    
+    {LISA_JSON_PROMPT}
+    
+    ---------------------------------------------------
+    TASK: Analyze the following script and generate prompts according to the JSON rules above.
+    SCRIPT:
+    {script}
+    """
+    
+    headers = {'Content-Type': 'application/json'}
+    data = {"contents": [{"parts": [{"text": final_instruction}]}]}
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            if 'candidates' in result: return result['candidates'][0]['content']['parts'][0]['text']
+            return "ERROR: Empty Response."
+        return f"ERROR {response.status_code}: {response.text}"
+    except Exception as e:
+        return f"CONNECTION ERROR: {str(e)}"
+
+# --- MAIN APP LAYOUT ---
+st.title("LISA v9.5")
+st.markdown("### AI Visual Architect | Dark Enterprise Edition")
+st.write("") # Spacer
+
+password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
+
+if password_input == ACCESS_PASSWORD:
+    st.sidebar.success("✅ SYSTEM ONLINE")
+    st.sidebar.markdown("---")
+    
+    # --- INTELLIGENT KEY CHECK ---
+    if "GOOGLE_API_KEY" in st.secrets:
+        final_api_key = st.secrets["GOOGLE_API_KEY"]
+        st.sidebar.success("✅ License Key Active")
+        st.sidebar.info("Authorized for: Lucalles Productions")
+    else:
+        st.sidebar.warning("⚠️ No License Found")
+        final_api_key = st.sidebar.text_input("Manual Key Entry", type="password")
+    
+    st.sidebar.markdown("---")
+    
+    # --- WORKSPACE ---
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.markdown("#### 🎬 Script Ingestion")
+        user_script = st.text_area("Input Stream", height=400, placeholder="Paste your true crime script here...", label_visibility="collapsed")
+
+    with col2:
+        st.markdown("#### 🚀 Controls")
+        st.info("System Ready") # Visual indicator that it's waiting
+        st.write("")
+        if st.button("Initialize Lisa"):
+            if not final_api_key:
+                st.error("⚠️ System Halted: Missing API Key")
+                st.stop()
+                
+            if user_script:
+                models = ["gemma-3-27b-it", "gemma-3-12b-it"]
+                success = False
+                status = st.empty()
+                progress = st.progress(0)
+                
+                for i, model in enumerate(models):
+                    status.info(f"⚡ Connecting to Neural Engine: {model}...")
+                    progress.progress((i + 1) * 50)
+                    result = generate_content_raw(final_api_key, model, user_script)
+                    
+                    if "ERROR" not in result:
+                        st.markdown("---")
+                        st.success(f"✅ Generation Complete via {model}")
+                        st.markdown(result)
+                        success = True
+                        status.empty()
+                        progress.empty()
+                        break
+                    else:
+                        st.warning(f"⚠️ {model} unresponsive...")
+                
+                if not success:
+                    st.error("❌ System Failure.")
+                    st.code(result)
+            else:
+                st.warning("⚠️ Input Buffer Empty")
+
+elif password_input:
+    st.sidebar.error("❌ Access Denied")
+
+# --- END OF FILE ---
