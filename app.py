@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import json
-import time
 import base64
 
 # --- CONFIGURATION ---
@@ -12,7 +11,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.5",
+    "version": "v10.6",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -86,7 +85,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN ---
-st.set_page_config(page_title="LISA v10.5", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v10.6", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -108,7 +107,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (LANE SWITCHING MODE) ---
+# --- THE ENGINE (SIMPLE MODE - NO LOOP) ---
 def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
@@ -130,55 +129,31 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # --- MODEL LIST (Based on your scan) ---
-    # Priority 1: Flash 2.0 (Fastest)
-    # Priority 2: Flash Lite (Backup)
-    # Priority 3: Flash Lite Preview (Deep Backup)
-    models = [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-2.0-flash-lite-preview-02-05"
-    ]
-    
-    # --- SWITCHING LOOP ---
-    for i, model in enumerate(models):
-        endpoint = f"/v1beta/models/{model}:generateContent"
-        params = f"?key={clean_key}"
-        url = base_url + endpoint + params
+    # WE TARGET ONLY THE MAIN MODEL
+    model = "gemini-2.0-flash"
+    endpoint = f"/v1beta/models/{model}:generateContent"
+    params = f"?key={clean_key}"
+    url = base_url + endpoint + params
         
-        try:
-            # st.write(f"Trying {model}...") # Debug line (Hidden)
-            response = requests.post(url, headers=headers, json=data)
-            
-            # SUCCESS
-            if response.status_code == 200:
-                result = response.json()
-                if 'candidates' in result: 
-                    return result['candidates'][0]['content']['parts'][0]['text']
-                # If response is empty, don't crash, just try next model
-            
-            # TRAFFIC JAM (429) -> IMMEDIATE SWITCH
-            elif response.status_code == 429:
-                if i < len(models) - 1:
-                    st.warning(f"⚠️ Node {model} busy. Switching to backup lane...")
-                    time.sleep(1) # Tiny pause before switch
-                    continue # Jump to next model immediately
-                else:
-                    # If ALL models failed 429, then we wait.
-                    st.error("❌ All traffic lanes full.")
-                    return "CRITICAL FAILURE: All models are busy. Please wait 1 minute."
-            
-            # OTHER ERROR (404 etc) -> SKIP
-            else:
-                continue
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        
+        # SUCCESS
+        if response.status_code == 200:
+            result = response.json()
+            if 'candidates' in result: 
+                return result['candidates'][0]['content']['parts'][0]['text']
+            return f"GOOGLE ERROR: Response was empty. {str(result)}"
+        
+        # ERROR - PRINT THE RAW TEXT
+        else:
+            return f"API ERROR {response.status_code}: {response.text}"
 
-        except Exception as e:
-            continue
-            
-    return "SYSTEM ERROR: Connection failed on all channels."
+    except Exception as e:
+        return f"PYTHON CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10.5")
+st.title("LISA v10.6")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -213,9 +188,10 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE ENGINE ---
-            with st.spinner(f"🚀 Lisa is finding the fastest open channel..."):
+            with st.spinner(f"🚀 Lisa is executing via gemini-2.0-flash..."):
                 result = generate_content_raw(final_api_key, user_script)
                 
+                # CHECK FOR SUCCESS INDICATORS
                 if "ERROR" not in result and "FAILURE" not in result:
                     st.markdown("---")
                     st.success(f"✅ Analysis Complete")
@@ -223,7 +199,8 @@ if password_input == ACCESS_PASSWORD:
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
-                    st.code(result)
+                    # PRINT THE RAW ERROR SO WE KNOW WHAT IS WRONG
+                    st.code(result) 
         else:
             st.warning("⚠️ Input Buffer Empty")
 
