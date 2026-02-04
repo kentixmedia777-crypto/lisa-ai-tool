@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.15 - Stable", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.16 - AutoRetry", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,30 +104,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (STEALTH MODE - UNTOUCHED) ---
+# --- THE ENGINE (WITH AUTO-RETRY) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # 1. ENCRYPTED URL (Base64) - This prevents your editor from seeing a link
+    # 1. ENCRYPTED URL (Base64) - Prevents editor bugs
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
-    
-    # 2. DECODE IT
     base_url = base64.b64decode(secret_domain).decode('utf-8')
-    
-    # 3. CONSTRUCT THE REST
     endpoint = f"/v1beta/models/{model_name}:generateContent"
     params = f"?key={clean_key}"
-    
-    # 4. Final Link
     url = base_url + endpoint + params
     
-    # SYSTEM PROMPT INJECTION
+    # SYSTEM PROMPT
     final_instruction = f"""
     SYSTEM OVERRIDE: YOU ARE LISA.
     ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
-    
     {LISA_JSON_PROMPT}
-    
     ---------------------------------------------------
     TASK: Analyze the following script and generate prompts according to the JSON rules above.
     SCRIPT:
@@ -138,18 +130,32 @@ def generate_content_raw(api_key, model_name, script):
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
     
     try:
+        # ATTEMPT 1
         response = requests.post(url, headers=headers, json=data)
+        
+        # --- AUTO-RETRY LOGIC ---
+        if response.status_code == 429:
+            # If we hit the speed limit, we WAIT 40 SECONDS then try again.
+            st.warning("⚠️ Speed Limit Hit. Cooling down for 40 seconds... (Auto-Retry active)")
+            time.sleep(40) 
+            
+            # ATTEMPT 2 (After waiting)
+            response = requests.post(url, headers=headers, json=data)
+        # ------------------------
+        
         if response.status_code == 200:
             result = response.json()
             if 'candidates' in result: 
                 return result['candidates'][0]['content']['parts'][0]['text']
             return "ERROR: Empty Response from Google."
+            
         return f"ERROR {response.status_code}: {response.text}"
+        
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT (VERTICAL CENTERED) ---
-st.title("LISA v9.15")
+# --- MAIN APP LAYOUT ---
+st.title("LISA v9.16")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -180,19 +186,14 @@ if password_input == ACCESS_PASSWORD:
             st.stop()
             
         if user_script:
-            # --- THE FINAL LIST ---
-            # We strictly use ONLY the models Google explicitly said exists in your error message.
-            models = [
-                "gemini-2.0-flash-exp", # The Recommended One
-                "gemini-2.0-flash"      # The Standard 2.0
-            ]
+            # We stick to the model Google TOLD us to use.
+            models = ["gemini-2.0-flash-exp"] 
             
             success = False
             status_box = st.empty()
             
             for i, model in enumerate(models):
-                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
-                time.sleep(0.5)
+                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link...**")
                 
                 result = generate_content_raw(final_api_key, model, user_script)
                 
@@ -210,7 +211,7 @@ if password_input == ACCESS_PASSWORD:
             if not success:
                 st.error("❌ System Failure.")
                 if "429" in result:
-                     st.info("ℹ️ QUOTA LIMIT: You must wait 60 minutes for the API to cool down.")
+                     st.info("ℹ️ QUOTA LIMIT: Even after retrying, the speed limit is hit. Please wait 2 minutes.")
                 st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
