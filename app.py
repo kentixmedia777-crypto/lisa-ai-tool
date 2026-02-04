@@ -85,7 +85,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE STYLING (META/FACEBOOK DARK THEME) ---
-st.set_page_config(page_title="LISA v9.5 - Complete", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.6 - Stable", page_icon="lz", layout="wide")
 
 # CSS INJECTION
 st.markdown("""
@@ -161,10 +161,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- ENGINE ---
+# --- ENGINE (SAFE URL CONSTRUCTION) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
+    
+    # SAFE LINK BUILDER (Prevents auto-formatting)
+    base = "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
+    endpoint = f"/v1beta/models/{model_name}:generateContent"
+    
+    # We build the URL in pieces so your editor cannot break it
+    url = base + endpoint + "?key=" + clean_key
     
     # We wrap the JSON in a strict instruction so the AI obeys it perfectly
     final_instruction = f"""
@@ -192,7 +198,7 @@ def generate_content_raw(api_key, model_name, script):
         return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v9.5")
+st.title("LISA v9.6")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") # Spacer
 
