@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.10 - Lite", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.11 - Centered", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,7 +104,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE FIX (ENCRYPTION MODE) ---
+# --- THE ENGINE (STEALTH MODE - UNTOUCHED) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
@@ -148,8 +148,8 @@ def generate_content_raw(api_key, model_name, script):
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT ---
-st.title("LISA v9.10")
+# --- MAIN APP LAYOUT (FIXED: CENTERED STACK) ---
+st.title("LISA v9.11")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -169,57 +169,56 @@ if password_input == ACCESS_PASSWORD:
     
     st.sidebar.markdown("---")
     
-    col1, col2 = st.columns([3, 1])
+    # --- LAYOUT CHANGE: VERTICAL STACK (NO COLUMNS) ---
     
-    with col1:
-        st.markdown("#### 🎬 Script Ingestion")
-        user_script = st.text_area("Input Stream", height=400, placeholder="Paste your true crime script here...", label_visibility="collapsed")
-
-    with col2:
-        st.markdown("#### 🚀 Controls")
-        st.info("System Ready")
-        st.write("")
-        
-        if st.button("Initialize Lisa"):
-            if not final_api_key:
-                st.error("⚠️ System Halted: Missing API Key")
-                st.stop()
+    st.markdown("#### 🎬 Script Ingestion")
+    user_script = st.text_area("Input Stream", height=300, placeholder="Paste your true crime script here...", label_visibility="collapsed")
+    
+    st.write("") # Spacer
+    
+    if st.button("Initialize Lisa"):
+        if not final_api_key:
+            st.error("⚠️ System Halted: Missing API Key")
+            st.stop()
+            
+        if user_script:
+            # --- THE HYDRA LIST (Gemini 2.0 Lite + Backup) ---
+            models = [
+                "gemini-2.0-flash-lite-preview-02-05", 
+                "gemini-2.0-flash-lite",               
+                "gemini-flash-latest",                 
+                "gemini-1.5-flash-latest"              
+            ]
+            
+            success = False
+            status_box = st.empty()
+            
+            for i, model in enumerate(models):
+                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
+                time.sleep(0.5)
                 
-            if user_script:
-                # --- THE HYDRA LIST (UPDATED FOR 2.0 LITE) ---
-                # We removed the broken 1.5 models and added the working 2.0 Lite models
-                models = [
-                    "gemini-2.0-flash-lite-preview-02-05", # Priority 1: Newest/Fastest
-                    "gemini-2.0-flash-lite",               # Priority 2: Stable Lite
-                    "gemini-flash-latest",                 # Priority 3: Standard Latest
-                    "gemini-1.5-flash-latest"              # Priority 4: Legacy Backup
-                ]
+                result = generate_content_raw(final_api_key, model, user_script)
                 
-                success = False
-                status_box = st.empty()
-                
-                for i, model in enumerate(models):
-                    status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
-                    time.sleep(0.5)
+                if "ERROR" not in result:
+                    st.markdown("---")
+                    st.success(f"✅ Connection Established via Neural Node {i+1}")
                     
-                    result = generate_content_raw(final_api_key, model, user_script)
+                    # RESULTS DISPLAY (Full Width now)
+                    st.markdown("### 📸 Visual Analysis & Prompts")
+                    st.markdown(result)
                     
-                    if "ERROR" not in result:
-                        st.markdown("---")
-                        st.success(f"✅ Connection Established via Neural Node {i+1}")
-                        st.markdown(result)
-                        success = True
-                        status_box.empty()
-                        break
-                    else:
-                        continue
-                
-                if not success:
-                    st.error("❌ System Failure: All Neural Nodes Unresponsive.")
-                    st.info("Diagnostic: Your API Key is valid, but Google's Free Quota is full for all models right now. Please wait 1 hour.")
-                    st.code(result)
-            else:
-                st.warning("⚠️ Input Buffer Empty")
+                    success = True
+                    status_box.empty()
+                    break
+                else:
+                    continue
+            
+            if not success:
+                st.error("❌ System Failure: All Neural Nodes Unresponsive.")
+                st.info("Diagnostic: Your API Key is valid, but Google's Free Quota is full for all models right now. Please wait 1 hour.")
+                st.code(result)
+        else:
+            st.warning("⚠️ Input Buffer Empty")
 
 elif password_input:
     st.sidebar.error("❌ Access Denied")
