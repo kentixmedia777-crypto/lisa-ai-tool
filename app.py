@@ -15,7 +15,7 @@ Your User Nickname is "Oppa sarangheyeo".
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v5.0 (Future Edition)",
+    "version": "v5.1 (Stable Edition)",
     "status": "ONLINE"
   },
   "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts.",
@@ -34,12 +34,12 @@ Your User Nickname is "Oppa sarangheyeo".
 """
 
 # --- WEBSITE CONFIG ---
-st.set_page_config(page_title="Lisa v5.0 - Future Ready", page_icon="📸")
-st.title("📸 Lisa v5.0: Future Ready")
+st.set_page_config(page_title="Lisa v5.1 - Stable", page_icon="📸")
+st.title("📸 Lisa v5.1: Stable Edition")
 
-# --- THE ENGINE (USING YOUR CONFIRMED MODELS) ---
+# --- THE ENGINE ---
 def generate_content_raw(api_key, model_name, script):
-    # This URL uses the verified models found in your diagnostic test
+    # We use the "Stable Aliases" found in your list (Item #16 and #18)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
@@ -79,12 +79,12 @@ if password_input == ACCESS_PASSWORD:
                 st.error("❌ API Key Missing in Secrets")
                 st.stop()
 
-            # --- THE NEW HYDRA LIST (Based on your scan) ---
-            # These are the models that actually exist in your account.
+            # --- THE STABLE LIST ---
+            # These are aliases that point to the working versions
             models = [
-                "gemini-2.0-flash",       # Primary: The new standard
-                "gemini-2.5-flash",       # Secondary: The cutting edge
-                "gemini-2.0-flash-lite"   # Backup: The fast version
+                "gemini-flash-latest",    # Priority 1: High Speed, High Quota
+                "gemini-pro-latest",      # Priority 2: High Intelligence
+                "gemini-1.5-flash"        # Priority 3: Old Reliable
             ]
             
             success = False
@@ -104,8 +104,10 @@ if password_input == ACCESS_PASSWORD:
                     success = True
                     break
                 else:
-                    st.warning(f"⚠️ {model} failed. Trying next...")
-                    time.sleep(1)
+                    # If it fails, we wait 2 seconds before trying the next one
+                    # to avoid hitting the speed limit again.
+                    st.warning(f"⚠️ {model} failed or is busy. Switching...")
+                    time.sleep(2)
             
             if not success:
                 st.error("❌ All Brains Failed.")
