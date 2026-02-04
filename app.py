@@ -1,18 +1,17 @@
 import streamlit as st
 import requests
 import json
-import time
 import base64
 
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE MASTER BRAIN (UNTOUCHED) ---
+# --- THE MASTER BRAIN ---
 LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.7",
+    "version": "v11.0",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -86,7 +85,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN ---
-st.set_page_config(page_title="LISA v10.7", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v11.0", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -108,7 +107,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (INVISIBLE AIRBAG MODE) ---
+# --- THE ENGINE (GATLING GUN MODE) ---
 def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
@@ -129,48 +128,50 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # WE TARGET THE FASTEST MODEL
-    model = "gemini-2.0-flash"
-    endpoint = f"/v1beta/models/{model}:generateContent"
-    params = f"?key={clean_key}"
-    url = base_url + endpoint + params
-        
-    # --- AIRBAG LOGIC ---
-    # Try once. If traffic jam (429), wait silently and try again.
-    # No red errors.
+    # --- THE GATLING GUN BARREL ---
+    # We load 3 bullets (Models). We fire them one by one instantly.
+    models = [
+        "gemini-2.0-flash",       # Bullet 1 (Fastest)
+        "gemini-2.0-flash-lite",  # Bullet 2 (Backup)
+        "gemini-1.5-flash"        # Bullet 3 (Old Faithful)
+    ]
     
-    max_attempts = 3
-    for attempt in range(max_attempts):
+    for i, model in enumerate(models):
+        endpoint = f"/v1beta/models/{model}:generateContent"
+        params = f"?key={clean_key}"
+        url = base_url + endpoint + params
+        
         try:
+            # FIRE!
             response = requests.post(url, headers=headers, json=data)
             
-            # SUCCESS
+            # HIT! (Success)
             if response.status_code == 200:
                 result = response.json()
                 if 'candidates' in result: 
                     return result['candidates'][0]['content']['parts'][0]['text']
-                return f"GOOGLE ERROR: Response was empty. {str(result)}"
+                # If empty, just keep going to next bullet
             
-            # TRAFFIC (429)
+            # JAMMED! (429 Traffic) -> INSTANTLY NEXT BULLET
             elif response.status_code == 429:
-                # If we have attempts left, wait silently
-                if attempt < max_attempts - 1:
-                    time.sleep(10) # Wait 10 seconds before next try
-                    continue
-                else:
-                    return f"API ERROR {response.status_code}: Too much traffic. Please wait 1 minute."
+                continue # No waiting. Just next model.
             
-            # OTHER ERRORS
+            # DEAD! (404 Not Found) -> INSTANTLY NEXT BULLET
+            elif response.status_code == 404:
+                continue
+            
+            # OTHER ERROR
             else:
-                return f"API ERROR {response.status_code}: {response.text}"
+                continue
 
-        except Exception as e:
-            return f"CONNECTION ERROR: {str(e)}"
+        except Exception:
+            continue
             
-    return "SYSTEM ERROR: Connection timeout."
+    # If all 3 bullets fail:
+    return "CRITICAL FAILURE: All neural paths blocked. Please check your API Key quota."
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10.7")
+st.title("LISA v11.0")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -205,18 +206,18 @@ if password_input == ACCESS_PASSWORD:
             
         if user_script:
             # --- THE ENGINE ---
-            # We show a spinner while the "Airbag Logic" runs in the background
-            with st.spinner(f"🚀 Lisa is executing via gemini-2.0-flash..."):
+            with st.spinner(f"🚀 Lisa is engaging multi-model rapid fire..."):
                 result = generate_content_raw(final_api_key, user_script)
                 
-                # CHECK FOR SUCCESS INDICATORS
-                if "ERROR" not in result and "FAILURE" not in result:
+                # CHECK FOR SUCCESS
+                if "FAILURE" not in result:
                     st.markdown("---")
                     st.success(f"✅ Analysis Complete")
                     st.markdown("### 📸 Visual Analysis & Prompts")
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
+                    st.info("ℹ️ All fast lanes are blocked. This means your 3rd Key might also be exhausted.")
                     st.code(result) 
         else:
             st.warning("⚠️ Input Buffer Empty")
