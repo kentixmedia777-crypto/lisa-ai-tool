@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.17 - Patient", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.18 - Sniper", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,11 +104,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (PATIENT MODE) ---
+# --- THE ENGINE (SNIPER MODE: 1 Model, Extended Wait) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # 1. ENCRYPTED URL
+    # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     endpoint = f"/v1beta/models/{model_name}:generateContent"
@@ -132,11 +132,15 @@ def generate_content_raw(api_key, model_name, script):
         # ATTEMPT 1
         response = requests.post(url, headers=headers, json=data)
         
-        # --- PATIENT LOGIC ---
+        # --- SNIPER LOGIC: 65 Second Wait ---
         if response.status_code == 429:
-            # If busy, wait 35 seconds (just enough to clear the 33s limit)
-            st.warning(f"⚠️ Neural Node Busy ({model_name}). Waiting 35 seconds for quota reset...")
-            time.sleep(35) 
+            st.warning(f"⚠️ Google API Speed Limit Hit. Activating Extended Cool-Down (65 seconds)... Please hold.")
+            
+            # We use a visual progress bar so you know it's working
+            my_bar = st.progress(0)
+            for percent_complete in range(100):
+                time.sleep(0.65) # 0.65s * 100 = 65 seconds total
+                my_bar.progress(percent_complete + 1)
             
             # ATTEMPT 2 (After waiting)
             response = requests.post(url, headers=headers, json=data)
@@ -153,8 +157,8 @@ def generate_content_raw(api_key, model_name, script):
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT (VERTICAL CENTERED) ---
-st.title("LISA v9.17")
+# --- MAIN APP LAYOUT ---
+st.title("LISA v9.18")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -185,39 +189,27 @@ if password_input == ACCESS_PASSWORD:
             st.stop()
             
         if user_script:
-            # We use the models that we KNOW exist (because they gave 429, not 404)
-            models = [
-                "gemini-2.0-flash",                 # Standard (Gave 429 earlier - EXISTS)
-                "gemini-2.0-flash-lite-preview-02-05" # Backup (Likely exists)
-            ]
+            # THE SNIPER: Only 1 Target. No distractions.
+            model = "gemini-2.0-flash" 
             
             success = False
             status_box = st.empty()
             
-            for i, model in enumerate(models):
-                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
-                
-                result = generate_content_raw(final_api_key, model, user_script)
-                
-                if "ERROR" not in result:
-                    st.markdown("---")
-                    st.success(f"✅ Connection Established via Neural Node {i+1}")
-                    st.markdown("### 📸 Visual Analysis & Prompts")
-                    st.markdown(result)
-                    success = True
-                    status_box.empty()
-                    break
-                else:
-                    # If it's a 404, we skip immediately.
-                    # If it was a 429, the function already waited 35s inside, so if it failed twice, we move on.
-                    continue
+            status_box.markdown(f"**🔄 Lisa is targeting neural node: {model}...**")
             
-            if not success:
+            result = generate_content_raw(final_api_key, model, user_script)
+            
+            if "ERROR" not in result:
+                st.markdown("---")
+                st.success(f"✅ Connection Established via {model}")
+                st.markdown("### 📸 Visual Analysis & Prompts")
+                st.markdown(result)
+                success = True
+                status_box.empty()
+            else:
                 st.error("❌ System Failure.")
                 if "429" in result:
-                     st.info("ℹ️ QUOTA LIMIT: High Traffic. Please wait 60 seconds and try again.")
-                if "404" in result:
-                     st.info("ℹ️ MODEL ERROR: Your account access has changed. Please create a new Free Google AI Studio key.")
+                        st.info("ℹ️ DAILY QUOTA: It seems you may have hit the *Daily* limit (1500 req), not just the minute limit. This requires a 24hr wait or a new Key.")
                 st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
