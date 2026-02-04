@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import time
 import base64
 
 # --- CONFIGURATION ---
@@ -11,7 +12,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v10.1",
+    "version": "v10.4",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -84,8 +85,8 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN (RESTORED EXACTLY) ---
-st.set_page_config(page_title="LISA v10.1", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN (CLEAN ENTERPRISE) ---
+st.set_page_config(page_title="LISA v10.4", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -101,25 +102,17 @@ st.markdown("""
     .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
     code { color: #e4e6eb; background-color: #3a3b3c; }
     
-    /* SUCCESS BADGES (RESTORING THE GREEN/BLUE LOOK) */
-    .stSuccess {
-        background-color: #2e7d32 !important; /* Professional Green */
-        color: white !important;
-        border: none;
-    }
-    .stInfo {
-        background-color: #1565c0 !important; /* Professional Blue */
-        color: white !important;
-        border: none;
-    }
+    /* SUCCESS BADGES (CLEAN LOOK) */
+    .stSuccess { background-color: #2e7d32 !important; color: white !important; border: none; }
+    .stInfo { background-color: #1565c0 !important; color: white !important; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (FAST MODE) ---
+# --- THE ENGINE (SMART TANK MODE) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # ENCRYPTED URL (Base64)
+    # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     endpoint = f"/v1beta/models/{model_name}:generateContent"
@@ -140,22 +133,37 @@ def generate_content_raw(api_key, model_name, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
     
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        
-        if response.status_code == 200:
-            result = response.json()
-            if 'candidates' in result: 
-                return result['candidates'][0]['content']['parts'][0]['text']
-            return "ERROR: Empty Response from Google."
-        
-        return f"ERROR {response.status_code}: {response.text}"
-        
-    except Exception as e:
-        return f"CONNECTION ERROR: {str(e)}"
+    # --- SMART RETRY LOOP ---
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            
+            # SUCCESS
+            if response.status_code == 200:
+                result = response.json()
+                if 'candidates' in result: 
+                    return result['candidates'][0]['content']['parts'][0]['text']
+                return "ERROR: Empty Response from Google."
+            
+            # TRAFFIC JAM (429) - AUTO WAIT
+            elif response.status_code == 429:
+                wait_time = (attempt + 1) * 30 
+                st.warning(f"⚠️ High Traffic (Attempt {attempt+1}/{max_retries}). Lisa is waiting {wait_time}s to clear the path...")
+                bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(wait_time / 100)
+                    bar.progress(i + 1)
+            else:
+                return f"ERROR {response.status_code}: {response.text}"
+                
+        except Exception as e:
+            return f"CONNECTION ERROR: {str(e)}"
+            
+    return "CRITICAL FAILURE: Google Traffic is too heavy. Please try again in 5 minutes."
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v10.1")
+st.title("LISA v10.4")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -165,17 +173,17 @@ if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
     st.sidebar.markdown("---")
     
-    # --- VISUAL RESTORATION: THE ORIGINAL LOOK ---
-    # We grab the key from secrets silently. 
-    # If you have a new key, update it in your Streamlit Secrets settings, NOT here in the UI.
+    # --- SECURE KEY LOADING ---
+    # We ONLY check st.secrets now. Safe and Secure.
     if "GOOGLE_API_KEY" in st.secrets:
         final_api_key = st.secrets["GOOGLE_API_KEY"]
         st.sidebar.success("✅ License Key Active")
         st.sidebar.info("Authorized for: Lucalles Productions")
     else:
-        st.sidebar.warning("⚠️ No License Found")
-        # Hidden fallback only if secrets fail completely
-        final_api_key = st.sidebar.text_input("Manual Key Entry", type="password")
+        # If the user forgot to put it in secrets, we show a clean error.
+        final_api_key = None
+        st.sidebar.error("❌ Key Missing")
+        st.sidebar.warning("Please add 'GOOGLE_API_KEY' to Streamlit Secrets.")
 
     st.sidebar.markdown("---")
     
@@ -187,26 +195,23 @@ if password_input == ACCESS_PASSWORD:
     
     if st.button("Initialize Lisa"):
         if not final_api_key:
-            st.error("⚠️ System Halted: Missing API Key")
+            st.error("⚠️ System Halted: Secrets file is empty.")
             st.stop()
             
         if user_script:
-            # --- THE SPEEDSTER ---
-            # Using the rocket-fast 2.0-flash we confirmed works.
+            # --- THE ENGINE ---
             model = "gemini-2.0-flash" 
             
             with st.spinner(f"🚀 Lisa is executing via {model}..."):
                 result = generate_content_raw(final_api_key, model, user_script)
                 
-                if "ERROR" not in result:
+                if "ERROR" not in result and "FAILURE" not in result:
                     st.markdown("---")
                     st.success(f"✅ Analysis Complete")
                     st.markdown("### 📸 Visual Analysis & Prompts")
                     st.markdown(result)
                 else:
                     st.error("❌ System Failure.")
-                    if "429" in result:
-                        st.info("ℹ️ QUOTA: The speed limit was hit. Please wait 1 minute.")
                     st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
