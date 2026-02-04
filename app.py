@@ -55,12 +55,15 @@ LISA_JSON_PROMPT = """
 """
 
 # --- WEBSITE CONFIG ---
-st.set_page_config(page_title="Lisa v8.0 - Full Power", page_icon="📸")
-st.title("📸 Lisa v8.0: The Restoration")
+st.set_page_config(page_title="Lisa v8.1 - Clean", page_icon="📸")
+st.title("📸 Lisa v8.1: Clean Connect")
 
-# --- THE GEMMA ENGINE ---
+# --- THE GEMMA ENGINE (WITH CLEANING) ---
 def generate_content_raw(api_key, model_name, script):
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={api_key}"
+    # CRITICAL FIX: We strip the key to remove invisible "ghost spaces"
+    clean_key = api_key.strip() 
+    
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
     
     # We wrap your JSON in a clear instruction so Gemma understands it
     final_instruction = f"""
@@ -110,7 +113,6 @@ if password_input == ACCESS_PASSWORD:
                 st.stop()
 
             # --- THE WORKING ENGINE (GEMMA) ---
-            # We stick to Gemma because we know it works for you.
             models = ["gemma-3-27b-it", "gemma-3-12b-it"]
             
             success = False
