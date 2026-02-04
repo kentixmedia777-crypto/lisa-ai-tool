@@ -12,7 +12,7 @@ LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v12.0",
+    "version": "v13.0",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
     "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
@@ -85,8 +85,8 @@ LISA_JSON_PROMPT = """
 }
 """
 
-# --- DARK MODE DESIGN (CLEAN ENTERPRISE) ---
-st.set_page_config(page_title="LISA v12.0", page_icon="lz", layout="wide")
+# --- DARK MODE DESIGN ---
+st.set_page_config(page_title="LISA v13.0", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -101,22 +101,16 @@ st.markdown("""
     .stButton>button:hover { background-color: #1877F2; box-shadow: 0 4px 12px rgba(45, 136, 255, 0.4); }
     .stAlert { background-color: #242526; color: #e4e6eb; border: 1px solid #3e4042; }
     code { color: #e4e6eb; background-color: #3a3b3c; }
-    
-    /* SUCCESS BADGES */
-    .stSuccess { background-color: #2e7d32 !important; color: white !important; border: none; }
-    .stInfo { background-color: #1565c0 !important; color: white !important; border: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (PROFESSIONAL MODE) ---
+# --- THE ENGINE (DIRECT INJECTION) ---
 def generate_content_raw(api_key, script):
     clean_key = api_key.strip()
     
-    # ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     
-    # SYSTEM PROMPT
     final_instruction = f"""
     SYSTEM OVERRIDE: YOU ARE LISA.
     ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
@@ -130,47 +124,32 @@ def generate_content_raw(api_key, script):
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
 
-    # TARGET: THE BEST MODEL ONLY
+    # TARGET: GEMINI 2.0 FLASH (FASTEST)
     model = "gemini-2.0-flash"
     endpoint = f"/v1beta/models/{model}:generateContent"
     params = f"?key={clean_key}"
     url = base_url + endpoint + params
         
-    # --- PRO RETRY LOOP ---
-    # Fast try. If fail, wait 5s (Micro-pause). If fail, STOP.
-    max_attempts = 2
-    
-    for attempt in range(max_attempts):
-        try:
-            response = requests.post(url, headers=headers, json=data)
-            
-            # SUCCESS
-            if response.status_code == 200:
-                result = response.json()
-                if 'candidates' in result: 
-                    return result['candidates'][0]['content']['parts'][0]['text']
-                return f"GOOGLE ERROR: Response was empty. {str(result)}"
-            
-            # TRAFFIC (429)
-            elif response.status_code == 429:
-                if attempt < max_attempts - 1:
-                    # Micro-wait (5 seconds)
-                    time.sleep(5) 
-                    continue
-                else:
-                    return f"QUOTA ERROR: This API Key is exhausted. Please swap keys."
-            
-            # OTHER ERRORS
-            else:
-                return f"API ERROR {response.status_code}: {response.text}"
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'candidates' in result: 
+                return result['candidates'][0]['content']['parts'][0]['text']
+            return f"GOOGLE ERROR: Response was empty. {str(result)}"
+        
+        elif response.status_code == 429:
+             return f"API ERROR 429: This specific key is exhausted. Please double check you pasted the NEW key."
+        
+        else:
+            return f"API ERROR {response.status_code}: {response.text}"
 
-        except Exception as e:
-            return f"CONNECTION ERROR: {str(e)}"
-            
-    return "SYSTEM ERROR: Connection timeout."
+    except Exception as e:
+        return f"CONNECTION ERROR: {str(e)}"
 
 # --- MAIN APP LAYOUT ---
-st.title("LISA v12.0")
+st.title("LISA v13.0")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -178,18 +157,19 @@ password_input = st.sidebar.text_input("🔒 Access Portal", type="password", pl
 
 if password_input == ACCESS_PASSWORD:
     st.sidebar.success("✅ SYSTEM ONLINE")
-    st.sidebar.markdown("---")
     
-    # --- SECURE KEY LOADING ---
-    if "GOOGLE_API_KEY" in st.secrets:
-        final_api_key = st.secrets["GOOGLE_API_KEY"]
-        st.sidebar.success("✅ License Key Active")
-        st.sidebar.info("Authorized for: Lucalles Productions")
+    # --- DIRECT KEY INPUT (MANDATORY) ---
+    st.sidebar.markdown("---")
+    st.sidebar.info("🔑 PASTE NEW KEY HERE")
+    # This input box is now the ONLY way to provide the key.
+    # It bypasses the Secrets file completely to ensure we use the fresh key.
+    manual_key = st.sidebar.text_input("Fresh API Key", type="password", help="Paste your unused key here.")
+    
+    if manual_key:
+        st.sidebar.success("✅ New Key Loaded")
     else:
-        final_api_key = None
-        st.sidebar.error("❌ Key Missing")
-        st.sidebar.warning("Check Secrets File")
-
+        st.sidebar.error("❌ Key Required")
+    
     st.sidebar.markdown("---")
     
     # --- INPUT AREA ---
@@ -199,16 +179,15 @@ if password_input == ACCESS_PASSWORD:
     st.write("") # Spacer
     
     if st.button("Initialize Lisa"):
-        if not final_api_key:
-            st.error("⚠️ System Halted: Secrets file is empty.")
+        if not manual_key:
+            st.error("⚠️ System Halted: You must paste the new key in the sidebar.")
             st.stop()
             
         if user_script:
-            # --- THE ENGINE ---
-            with st.spinner(f"🚀 Lisa is analyzing..."):
-                result = generate_content_raw(final_api_key, user_script)
+            with st.spinner(f"🚀 Lisa is executing via gemini-2.0-flash..."):
+                # We pass the manual_key DIRECTLY to the engine
+                result = generate_content_raw(manual_key, user_script)
                 
-                # CHECK FOR SUCCESS INDICATORS
                 if "ERROR" not in result:
                     st.markdown("---")
                     st.success(f"✅ Analysis Complete")
