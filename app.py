@@ -86,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.16 - AutoRetry", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.17 - Patient", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -104,18 +104,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE (WITH AUTO-RETRY) ---
+# --- THE ENGINE (PATIENT MODE) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # 1. ENCRYPTED URL (Base64) - Prevents editor bugs
+    # 1. ENCRYPTED URL
     secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     base_url = base64.b64decode(secret_domain).decode('utf-8')
     endpoint = f"/v1beta/models/{model_name}:generateContent"
     params = f"?key={clean_key}"
     url = base_url + endpoint + params
     
-    # SYSTEM PROMPT
     final_instruction = f"""
     SYSTEM OVERRIDE: YOU ARE LISA.
     ADOPT THE FOLLOWING JSON CONFIGURATION STRICTLY. DO NOT DEVIATE.
@@ -133,15 +132,15 @@ def generate_content_raw(api_key, model_name, script):
         # ATTEMPT 1
         response = requests.post(url, headers=headers, json=data)
         
-        # --- AUTO-RETRY LOGIC ---
+        # --- PATIENT LOGIC ---
         if response.status_code == 429:
-            # If we hit the speed limit, we WAIT 40 SECONDS then try again.
-            st.warning("⚠️ Speed Limit Hit. Cooling down for 40 seconds... (Auto-Retry active)")
-            time.sleep(40) 
+            # If busy, wait 35 seconds (just enough to clear the 33s limit)
+            st.warning(f"⚠️ Neural Node Busy ({model_name}). Waiting 35 seconds for quota reset...")
+            time.sleep(35) 
             
             # ATTEMPT 2 (After waiting)
             response = requests.post(url, headers=headers, json=data)
-        # ------------------------
+        # ---------------------
         
         if response.status_code == 200:
             result = response.json()
@@ -154,8 +153,8 @@ def generate_content_raw(api_key, model_name, script):
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT ---
-st.title("LISA v9.16")
+# --- MAIN APP LAYOUT (VERTICAL CENTERED) ---
+st.title("LISA v9.17")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
@@ -186,14 +185,17 @@ if password_input == ACCESS_PASSWORD:
             st.stop()
             
         if user_script:
-            # We stick to the model Google TOLD us to use.
-            models = ["gemini-2.0-flash-exp"] 
+            # We use the models that we KNOW exist (because they gave 429, not 404)
+            models = [
+                "gemini-2.0-flash",                 # Standard (Gave 429 earlier - EXISTS)
+                "gemini-2.0-flash-lite-preview-02-05" # Backup (Likely exists)
+            ]
             
             success = False
             status_box = st.empty()
             
             for i, model in enumerate(models):
-                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link...**")
+                status_box.markdown(f"**🔄 Lisa is scanning for a viable neural link ({i+1}/{len(models)})...**")
                 
                 result = generate_content_raw(final_api_key, model, user_script)
                 
@@ -206,12 +208,16 @@ if password_input == ACCESS_PASSWORD:
                     status_box.empty()
                     break
                 else:
+                    # If it's a 404, we skip immediately.
+                    # If it was a 429, the function already waited 35s inside, so if it failed twice, we move on.
                     continue
             
             if not success:
                 st.error("❌ System Failure.")
                 if "429" in result:
-                     st.info("ℹ️ QUOTA LIMIT: Even after retrying, the speed limit is hit. Please wait 2 minutes.")
+                     st.info("ℹ️ QUOTA LIMIT: High Traffic. Please wait 60 seconds and try again.")
+                if "404" in result:
+                     st.info("ℹ️ MODEL ERROR: Your account access has changed. Please create a new Free Google AI Studio key.")
                 st.code(result)
         else:
             st.warning("⚠️ Input Buffer Empty")
