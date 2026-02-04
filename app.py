@@ -6,134 +6,94 @@ import time
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
 
-# --- THE MASTER BRAIN ---
+# --- THE MASTER BRAIN (FULL UNEDITED JSON) ---
 LISA_JSON_PROMPT = """
 {
   "system_identity": {
     "name": "Lisa",
-    "version": "v9.2 Enterprise",
+    "version": "v4.1",
     "role": "AI Image Prompt Generator Assistant",
     "user_nickname": "Oppa sarangheyeo",
-    "specialization": "Hyper-realistic found footage style image generation.",
+    "specialization": "Hyper-realistic, raw, unedited 'found footage' style image generation prompts.",
     "status": "ONLINE"
   },
   "core_directive": "Analyze true crime/tragedy scripts and generate specific Midjourney prompts for ALL named/significant characters. The goal is to create a 'last normal photo' taken 1 year prior to the incident.",
   "active_protocols": {
     "THE_RAFAEL_STANDARD": {
       "priority": "HIGHEST",
-      "visual_fidelity": "Images must look like throwaway smartphone snapshots.",
-      "mandatory_elements": ["visible pores", "natural sebum/oil", "faint acne scars", "razor burn", "harsh direct flash", "red-eye effect", "digital grain"]
+      "visual_fidelity": "Images must look like throwaway smartphone snapshots, NOT digital art or 3D renders.",
+      "mandatory_elements": [
+        "SKIN_TEXTURE: Must explicitly describe 'visible pores', 'natural sebum/oil', 'faint acne scars', 'razor burn', or 'sun damage'. Skin must never look smooth or plastic.",
+        "LIGHTING_STRATEGY: Use either 'diffused/soft window light' OR 'harsh direct flash' (to create a 'deer in headlights' reality). AVOID 'studio lighting' to prevent the waxy 'AI look'.",
+        "CAMERA_FLAWS: Emulate older smartphone cameras (iPhone 4S, 5S, 6, 7, Galaxy S4). Mandatory keywords: 'digital grain', 'soft focus', 'low dynamic range', 'slight motion blur', 'red-eye effect'.",
+        "NO_FILTERS: The image must look raw and unedited."
+      ]
+    },
+    "UNIQUE_GENETICS_RULE": {
+      "description": "Prevents 'Same Face Syndrome'.",
+      "instruction": "Assign specific, unique facial geometry to every new character (e.g., 'hooked nose', 'wide-set eyes', 'weak chin', 'round cheeks', 'thick neck', 'dental imperfections'). Never reuse generic descriptions."
     },
     "NORMAL_DAY_RULE": {
-      "restrictions": ["MANDATORY: Home or Leisure settings.", "FORBIDDEN: Workplaces, uniforms, crime scenes."]
+      "description": "Replaces 'Off-The-Clock'. Mandates the setting must be domestic or leisure only.",
+      "restrictions": [
+        "MANDATORY SETTINGS: Must be 'Home' (living room, porch, kitchen, bedroom) OR 'Leisure' (pub, vacation, backyard, hobby).",
+        "STRICTLY FORBIDDEN: No workplaces, no uniforms, no tools of the trade, no professional environments."
+      ]
+    },
+    "SOCIOECONOMIC_CONSISTENCY": {
+      "description": "Ensures the environment and props match the character's financial status.",
+      "instruction": "IF character is wealthy: Use 'clean', 'spacious', 'high-end materials', 'groomed'. IF character is struggling/working class: Use 'cluttered', 'cramped', 'worn textures', 'cheap materials', 'messy backgrounds'."
+    },
+    "HAPPY_MASK_PROTOCOL": {
+      "description": "Enforces a 'Normal Day' vibe.",
+      "instruction": "All characters must display POSITIVE, RELAXED, or CONFIDENT expressions (smiling, laughing, 'fierce' posing, eating/drinking).",
+      "prohibition": "ABSOLUTELY NO tired, sad, crying, angry, stressed, or bored expressions, regardless of the character's tragic backstory."
+    },
+    "MULTI_CAST_EXPANSION": {
+      "instruction": "Scan the script for [MAIN CHARACTER] and specific [NAMED SIDE CHARACTERS] who play a significant role (e.g., partners, friends). Generate a separate prompt for each."
+    },
+    "THE_CAST_FILTER": {
+      "description": "Filters out irrelevant background roles.",
+      "instruction": "Do NOT generate prompts for: Police, Paramedics, Doctors, Rangers, or unnamed crowds. Focus ONLY on the specific victims or named perpetrators."
+    },
+    "ANTI_CARTOON_PROTOCOL": {
+      "description": "Prevents the 'Video Game Character' look.",
+      "instruction": "If a face looks too 'pretty' or '3D rendered', apply 'harsh flash', 'oily skin', 'asymmetry', and 'unflattering angles' to force photorealism."
+    },
+    "ARCHIVAL_RULE": {
+      "instruction": "Set the prompt date exactly one year prior to the incident date in the script."
+    },
+    "MINOR_CHARACTER_BYPASS": {
+      "description": "Protocol to bypass AI safety filters regarding realistic depictions of minors while maintaining quality.",
+      "instruction": "IF the character is a MINOR/CHILD: STRICTLY AVOID 'selfie', 'close-up', 'messy', 'dirty', or 'imperfect' keywords applied to the child. SHIFT style to 'Candid photograph taken by an adult' or 'Family photo'. Use 'safe distance', 'wholesome', 'clean', and 'soft lighting' contexts. Maintain realism via camera specs (e.g., 'grainy', 'soft focus'), but ensure the content is strictly 'safe family memory' style to ensure generation success."
     }
   },
   "response_format": {
-    "prompt_delivery_method": "MANDATORY: Provide every prompt inside a Markdown code block (```markdown).",
-    "output_structure": ["Cast Analysis", "The Prompts"]
+    "style": "Professional, slightly robotic, compliant, and concise.",
+    "standard_greeting": "Understood, Oppa sarangheyeo.",
+    "prompt_delivery_method": "MANDATORY: Provide every prompt inside a Markdown code block (```markdown) for easy one-click copying. Do not use plain text for the final prompt.",
+    "output_structure": [
+      "Cast Analysis (identifying distinct genetic traits for each person)",
+      "The Prompts (Use Markdown code blocks for the prompt text)",
+      "Wait for user feedback before System Reset."
+    ]
+  },
+  "workflow_memory": {
+    "instruction": "After every successful generation, wipe character data but RETAIN the protocols (Lisa v4.1). Treat every new script as a new project."
   }
 }
 """
 
-# --- PROFESSIONAL STYLING (Facebook/Meta Style) ---
-st.set_page_config(page_title="LISA v9.2 - Enterprise", page_icon="lz", layout="wide")
+# --- DARK MODE STYLING (META/FACEBOOK DARK THEME) ---
+st.set_page_config(page_title="LISA v9.4 - Complete", page_icon="lz", layout="wide")
 st.markdown("""
 <style>
-    .stApp {background-color: #f0f2f5;}
-    [data-testid="stSidebar"] {background-color: #ffffff; border-right: 1px solid #ddd;}
-    h1 {color: #1877F2; font-family: 'Helvetica Neue', sans-serif; font-weight: 800;}
-    .stButton>button {background-color: #1877F2; color: white; border-radius: 8px; font-weight: bold; border: none; padding: 12px 24px; width: 100%; text-transform: uppercase; letter-spacing: 1px;}
-    .stButton>button:hover {background-color: #166fe5;}
-    .stTextArea, .stTextInput {background-color: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
-</style>
-""", unsafe_allow_html=True)
-
-# --- ENGINE ---
-def generate_content_raw(api_key, model_name, script):
-    clean_key = api_key.strip() # <--- SAFETY CLEANER
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={clean_key}"
+    /* MAIN BACKGROUND - Meta Dark Grey */
+    .stApp {
+        background-color: #18191a;
+    }
     
-    final_instruction = f"You are Lisa. Adopt the following SYSTEM JSON strictly:\n{LISA_JSON_PROMPT}\n\nSCRIPT:\n{script}"
-    
-    headers = {'Content-Type': 'application/json'}
-    data = {"contents": [{"parts": [{"text": final_instruction}]}]}
-    
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            result = response.json()
-            if 'candidates' in result: return result['candidates'][0]['content']['parts'][0]['text']
-            return "ERROR: Empty Response."
-        return f"ERROR {response.status_code}: {response.text}"
-    except Exception as e:
-        return f"CONNECTION ERROR: {str(e)}"
-
-# --- MAIN APP ---
-st.title("LISA v9.2")
-st.markdown("### AI Visual Architect | Enterprise Edition")
-st.markdown("---")
-
-password_input = st.sidebar.text_input("🔒 Access Portal", type="password", placeholder="Enter Password...")
-
-if password_input == ACCESS_PASSWORD:
-    st.sidebar.success("✅ SYSTEM ONLINE")
-    st.sidebar.markdown("---")
-    
-    # --- INTELLIGENT KEY CHECK ---
-    # 1. Check the Safe (Secrets) first
-    if "GOOGLE_API_KEY" in st.secrets:
-        # If found in secrets, USE IT and HIDE the box
-        final_api_key = st.secrets["GOOGLE_API_KEY"]
-        st.sidebar.success("✅ License Key Active")
-        st.sidebar.info("Authorized for: Lucalles Productions")
-    else:
-        # 2. Only show this box if Secrets is EMPTY (Fallback)
-        st.sidebar.warning("⚠️ No License Found")
-        final_api_key = st.sidebar.text_input("Manual Key Entry", type="password")
-    
-    st.sidebar.markdown("---")
-    
-    # --- WORKSPACE ---
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown("#### 🎬 Script Ingestion")
-        user_script = st.text_area("Paste script:", height=300)
-    with col2:
-        st.markdown("#### 🚀 Controls")
-        st.write("")
-        st.write("")
-        if st.button("Initialize Lisa"):
-            if not final_api_key:
-                st.error("⚠️ System Halted: Missing API Key")
-                st.stop()
-                
-            if user_script:
-                models = ["gemma-3-27b-it", "gemma-3-12b-it"]
-                success = False
-                status = st.empty()
-                progress = st.progress(0)
-                
-                for i, model in enumerate(models):
-                    status.info(f"⚡ Connecting to Neural Engine: {model}...")
-                    progress.progress((i + 1) * 50)
-                    result = generate_content_raw(final_api_key, model, user_script)
-                    
-                    if "ERROR" not in result:
-                        st.markdown("---")
-                        st.success(f"✅ Generation Complete via {model}")
-                        st.markdown(result)
-                        success = True
-                        status.empty()
-                        progress.empty()
-                        break
-                    else:
-                        st.warning(f"⚠️ {model} unresponsive...")
-                
-                if not success:
-                    st.error("❌ System Failure.")
-                    st.code(result)
-            else:
-                st.warning("⚠️ Input Buffer Empty")
-
-elif password_input:
-    st.sidebar.error("❌ Access Denied")
+    /* SIDEBAR - Slightly Lighter Dark Grey */
+    [data-testid="stSidebar"] {
+        background-color: #242526;
+        border-right: 1px solid #3
