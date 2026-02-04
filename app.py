@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import time
+import base64
 
 # --- CONFIGURATION ---
 ACCESS_PASSWORD = "kent_secret_2026"
@@ -85,7 +86,7 @@ LISA_JSON_PROMPT = """
 """
 
 # --- DARK MODE DESIGN (UNTOUCHED) ---
-st.set_page_config(page_title="LISA v9.8 - Fix", page_icon="lz", layout="wide")
+st.set_page_config(page_title="LISA v9.9 - Stealth", page_icon="lz", layout="wide")
 
 st.markdown("""
 <style>
@@ -103,20 +104,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- THE ENGINE FIX ---
-# I have rewritten this part so the URL cannot break into a button.
+# --- THE ENGINE FIX (ENCRYPTION MODE) ---
 def generate_content_raw(api_key, model_name, script):
     clean_key = api_key.strip()
     
-    # 1. Base Domain
-    domain = "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
-    # 2. API Endpoint
-    endpoint = "/v1beta/models/" + model_name + ":generateContent"
-    # 3. Parameters
-    params = "?key=" + clean_key
+    # 1. ENCRYPTED URL (Base64) - This prevents your editor from seeing a link
+    # The hidden text is: "[https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)"
+    secret_domain = "aHR0cHM6Ly9nZW5lcmF0aXZlbGFuZ3VhZ2UuZ29vZ2xlYXBpcy5jb20="
     
-    # 4. Construct Full URL (Safe Method)
-    url = domain + endpoint + params
+    # 2. DECODE IT (The code rebuilds the link safely)
+    base_url = base64.b64decode(secret_domain).decode('utf-8')
+    
+    # 3. CONSTRUCT THE REST
+    endpoint = f"/v1beta/models/{model_name}:generateContent"
+    params = f"?key={clean_key}"
+    
+    # 4. Final Link
+    url = base_url + endpoint + params
     
     # SYSTEM PROMPT INJECTION
     final_instruction = f"""
@@ -135,22 +139,18 @@ def generate_content_raw(api_key, model_name, script):
     data = {"contents": [{"parts": [{"text": final_instruction}]}]}
     
     try:
-        # We perform the call with the safe URL
         response = requests.post(url, headers=headers, json=data)
-        
         if response.status_code == 200:
             result = response.json()
             if 'candidates' in result: 
                 return result['candidates'][0]['content']['parts'][0]['text']
             return "ERROR: Empty Response from Google."
-            
         return f"ERROR {response.status_code}: {response.text}"
-        
     except Exception as e:
         return f"CONNECTION ERROR: {str(e)}"
 
-# --- MAIN APP LAYOUT (UNTOUCHED) ---
-st.title("LISA v9.8")
+# --- MAIN APP LAYOUT ---
+st.title("LISA v9.9")
 st.markdown("### AI Visual Architect | Dark Enterprise Edition")
 st.write("") 
 
